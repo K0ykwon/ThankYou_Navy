@@ -5,9 +5,11 @@ import { useCreative } from '@/context/CreativeContext';
 import Link from 'next/link';
 
 export default function Dashboard() {
-  const { projects, currentProject, createProject, selectProject, deleteProject } = useCreative();
+  const { projects, currentProject, createProject, selectProject, deleteProject, addEpisode, updateEpisode, deleteEpisode } = useCreative();
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', description: '' });
+  const [showNewEpisodeForm, setShowNewEpisodeForm] = useState(false);
+  const [episodeForm, setEpisodeForm] = useState({ title: '', summary: '' });
 
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +116,91 @@ export default function Dashboard() {
               >
                 🎬 스토리보드
               </Link>
+            </div>
+
+            {/* 회차 관리 섹션 */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-blue-900">회차 관리</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowNewEpisodeForm(!showNewEpisodeForm)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg"
+                  >
+                    + 새 회차 추가
+                  </button>
+                </div>
+              </div>
+
+              {showNewEpisodeForm && (
+                <div className="bg-white p-4 rounded-lg mt-4">
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700">회차 제목</label>
+                    <input
+                      value={episodeForm.title}
+                      onChange={(e) => setEpisodeForm({ ...episodeForm, title: e.target.value })}
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700">요약</label>
+                    <textarea
+                      value={episodeForm.summary}
+                      onChange={(e) => setEpisodeForm({ ...episodeForm, summary: e.target.value })}
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (!episodeForm.title.trim()) return;
+                        const newEpisode = {
+                          id: Date.now().toString(),
+                          title: episodeForm.title,
+                          summary: episodeForm.summary,
+                          createdAt: new Date(),
+                          updatedAt: new Date(),
+                        };
+                        addEpisode(newEpisode as any);
+                        setEpisodeForm({ title: '', summary: '' });
+                        setShowNewEpisodeForm(false);
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+                    >
+                      추가
+                    </button>
+                    <button
+                      onClick={() => setShowNewEpisodeForm(false)}
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentProject.episodes && currentProject.episodes.length === 0 && (
+                  <div className="text-sm text-gray-600">회차가 없습니다. 새 회차를 추가해보세요.</div>
+                )}
+                {currentProject.episodes && currentProject.episodes.map((ep) => (
+                  <div key={ep.id} className="bg-white p-3 rounded shadow-sm flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{ep.title}</div>
+                      {ep.summary && <div className="text-sm text-gray-600">{ep.summary}</div>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => deleteEpisode(ep.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-3 py-1 rounded"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

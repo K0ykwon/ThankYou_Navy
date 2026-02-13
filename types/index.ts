@@ -41,7 +41,18 @@ export interface CreativeProject {
   description: string;
   content: string;
   characters: Character[];
+  episodes: Episode[];
   timeline: Timeline;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Episode {
+  id: string;
+  title: string;
+  summary?: string;
+  chapterNumber?: number;
+  scenes?: SceneEvent[];
   createdAt: Date;
   updatedAt: Date;
 }

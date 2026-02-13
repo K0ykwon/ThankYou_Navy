@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
 import { CreativeProvider } from "@/context/CreativeContext";
+import ClientShell from '@/components/ClientShell';
 
 export const metadata: Metadata = {
   title: "창작 스튜디오 - 창작 보조 도구",
@@ -17,12 +17,9 @@ export default function RootLayout({
     <html lang="ko">
       <body className="bg-gray-50">
         <CreativeProvider>
-          <div className="flex min-h-screen">
-            <Navigation />
-            <main className="ml-64 flex-1">
-              {children}
-            </main>
-          </div>
+          <ClientShell>
+            {children}
+          </ClientShell>
         </CreativeProvider>
       </body>
     </html>

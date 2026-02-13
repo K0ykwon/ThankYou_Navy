@@ -21,6 +21,9 @@ interface CreativeContextType {
   addSceneEvent: (event: SceneEvent) => void;
   updateSceneEvent: (id: string, updates: Partial<SceneEvent>) => void;
   deleteSceneEvent: (id: string) => void;
+  addEpisode: (episode: import('@/types').Episode) => void;
+  updateEpisode: (id: string, updates: Partial<import('@/types').Episode>) => void;
+  deleteEpisode: (id: string) => void;
   updateProjectContent: (content: string) => void;
 }
 
@@ -40,15 +43,17 @@ export function CreativeProvider({
 
   const createProject = useCallback(
     (title: string, description: string) => {
+      const id = Date.now().toString();
       const newProject: CreativeProject = {
-        id: Date.now().toString(),
+        id,
         title,
         description,
         content: '',
         characters: [],
+        episodes: [],
         timeline: {
-          id: Date.now().toString(),
-          projectId: Date.now().toString(),
+          id,
+          projectId: id,
           events: [],
           totalDuration: 0,
         },
@@ -154,6 +159,47 @@ export function CreativeProvider({
     [currentProject, updateProject]
   );
 
+  const addEpisode = useCallback(
+    (episode: import('@/types').Episode) => {
+      if (!currentProject) return;
+      const updated = {
+        ...currentProject,
+        episodes: [...currentProject.episodes, episode],
+        updatedAt: new Date(),
+      };
+      updateProject(currentProject.id, updated);
+    },
+    [currentProject, updateProject]
+  );
+
+  const updateEpisode = useCallback(
+    (id: string, updates: Partial<import('@/types').Episode>) => {
+      if (!currentProject) return;
+      const updated = {
+        ...currentProject,
+        episodes: currentProject.episodes.map((e) =>
+          e.id === id ? { ...e, ...updates } : e
+        ),
+        updatedAt: new Date(),
+      };
+      updateProject(currentProject.id, updated);
+    },
+    [currentProject, updateProject]
+  );
+
+  const deleteEpisode = useCallback(
+    (id: string) => {
+      if (!currentProject) return;
+      const updated = {
+        ...currentProject,
+        episodes: currentProject.episodes.filter((e) => e.id !== id),
+        updatedAt: new Date(),
+      };
+      updateProject(currentProject.id, updated);
+    },
+    [currentProject, updateProject]
+  );
+
   const updateSceneEvent = useCallback(
     (id: string, updates: Partial<SceneEvent>) => {
       if (!currentProject) return;
@@ -211,6 +257,9 @@ export function CreativeProvider({
     addSceneEvent,
     updateSceneEvent,
     deleteSceneEvent,
+    addEpisode,
+    updateEpisode,
+    deleteEpisode,
     updateProjectContent,
   };
 
