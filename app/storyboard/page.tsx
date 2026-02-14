@@ -19,6 +19,8 @@ export default function StoryboardPage() {
     description: '',
     timestamp: 0,
     characterIds: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +47,8 @@ export default function StoryboardPage() {
       description: '',
       timestamp: 0,
       characterIds: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     setShowForm(false);
   };
@@ -55,6 +59,8 @@ export default function StoryboardPage() {
       description: event.description,
       timestamp: event.timestamp,
       characterIds: event.characterIds,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt,
     });
     setEditingId(event.id);
     setShowForm(true);
@@ -68,6 +74,8 @@ export default function StoryboardPage() {
       description: '',
       timestamp: 0,
       characterIds: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   };
 

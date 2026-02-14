@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Navigation from "@/components/Navigation";
-import { useCreative } from "@/context/CreativeContext";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import Sidebar from '@/components/Sidebar';
+import SettingsModal from '@/components/SettingsModal';
+import { useCreative } from '@/context/CreativeContext';
 
 export default function ClientShell({
   children,
@@ -10,13 +12,39 @@ export default function ClientShell({
   children: React.ReactNode;
 }) {
   const { currentProject } = useCreative();
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      {currentProject && <Navigation />}
-      <main className={currentProject ? "ml-64 flex-1" : "flex-1"}>
-        {children}
-      </main>
+    <div className="flex min-h-screen flex-col">
+      {/* Global Header */}
+      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 px-6 shadow-lg">
+        <div className="max-w-full mx-auto flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <span className="text-3xl">🎨</span>
+            <div>
+              <h1 className="text-2xl font-bold">창작 스튜디오</h1>
+              <p className="text-xs text-blue-200">창작 보조 도구</p>
+            </div>
+          </Link>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded transition-colors text-sm font-medium"
+          >
+            설정
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex flex-1">
+        {currentProject && <Sidebar />}
+        <main className={currentProject ? 'flex-1' : 'flex-1'}>
+          {children}
+        </main>
+      </div>
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import ClientShell from '@/components/ClientShell';
 
 export const metadata: Metadata = {
   title: "창작 스튜디오 - 창작 보조 도구",
-  description: "텍스트 에디터, 캐릭터 관리, 스토리보드를 한곳에서 관리하는 창작 보조 도구",
+  description: "소설 작가와 창작자를 위한 통합 창작 보조 도구. 스토리보드, 캐릭터 관리, 타임라인 등 모든 기능을 한곳에서",
 };
 
 export default function RootLayout({

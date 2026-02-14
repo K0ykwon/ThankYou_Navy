@@ -20,6 +20,8 @@ export default function CharactersPage() {
     appearance: '',
     personality: '',
     backstory: '',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,6 +50,8 @@ export default function CharactersPage() {
       appearance: '',
       personality: '',
       backstory: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     setShowForm(false);
   };
@@ -60,6 +64,8 @@ export default function CharactersPage() {
       appearance: character.appearance,
       personality: character.personality,
       backstory: character.backstory,
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt,
     });
     setEditingId(character.id);
     setShowForm(true);
@@ -75,6 +81,8 @@ export default function CharactersPage() {
       appearance: '',
       personality: '',
       backstory: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   };
 
