@@ -3,6 +3,7 @@
 import { useCreative } from '@/context/CreativeContext';
 import { Character } from '@/types';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function CharactersPage() {
   const {
@@ -23,6 +24,21 @@ export default function CharactersPage() {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
+  if (!currentProject) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto">
+        <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
+          <p className="text-gray-600 text-lg mb-4">
+            프로젝트를 먼저 선택하세요
+          </p>
+          <Link href="/" className="text-blue-600 hover:text-blue-800 underline">
+            프로젝트로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

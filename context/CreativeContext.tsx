@@ -16,6 +16,7 @@ import {
   FontSize,
   ThemeMode,
 } from '@/types';
+import { supabase } from '@/lib/db';
 
 interface CreativeContextType {
   // 프로젝트 기본 관리
@@ -98,54 +99,129 @@ export function CreativeProvider({
 
   // ==================== 프로젝트 기본 관리 ====================
   const createProject = useCallback(
-    (title: string, description: string, genre?: string, author?: string) => {
-      const id = Date.now().toString();
-      const newProject: CreativeProject = {
-        id,
-        title,
-        description,
-        genre,
-        author,
-        fileTree: [],
-        characters: [],
-        episodes: [],
-        timeline: {
+    async (title: string, description: string, genre?: string, author?: string) => {
+      try {
+        const id = Date.now().toString();
+        const newProject: CreativeProject = {
           id,
-          projectId: id,
-          events: [],
-          totalDuration: 0,
-        },
-        todos: [],
-        mindMap: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setProjects((prev) => [...prev, newProject]);
-      setCurrentProject(newProject);
+          title,
+          description,
+          genre,
+          author,
+          fileTree: [],
+          characters: [],
+          episodes: [],
+          timeline: {
+            id,
+            projectId: id,
+            events: [],
+            totalDuration: 0,
+          },
+          todos: [],
+          mindMap: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        // Supabase에 저장 (기본 정보만)
+        const { data, error } = await supabase
+          .from('projects')
+          .insert([
+            {
+              id,
+              title,
+              description,
+              genre: genre || null,
+              author: author || null,
+              file_tree: newProject.fileTree,
+              timeline: newProject.timeline,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Failed to create project:', error.message);
+          // 로컬에만 저장 (오프라인 모드)
+          setProjects((prev) => [...prev, newProject]);
+          setCurrentProject(newProject);
+          return;
+        }
+
+        // 로컬 상태 업데이트
+        setProjects((prev) => [...prev, newProject]);
+        setCurrentProject(newProject);
+      } catch (err) {
+        console.error('Error creating project:', err);
+      }
     },
     []
   );
 
   const updateProject = useCallback(
-    (id: string, updates: Partial<CreativeProject>) => {
-      setProjects((prevProjects) =>
-        prevProjects.map((p) =>
-          p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
-        )
-      );
-      setCurrentProject((prev) => {
-        if (prev?.id === id) {
-          return { ...prev, ...updates, updatedAt: new Date() };
+    async (id: string, updates: Partial<CreativeProject>) => {
+      try {
+        // Supabase에 업데이트 (실제 DB 컬럼만)
+        const updateData: any = {
+          updated_at: new Date().toISOString(),
+        };
+
+        // 실제 DB 컬럼에 해당하는 필드만 추가
+        if (updates.title !== undefined) updateData.title = updates.title;
+        if (updates.description !== undefined) updateData.description = updates.description;
+        if (updates.genre !== undefined) updateData.genre = updates.genre;
+        if (updates.author !== undefined) updateData.author = updates.author;
+        if (updates.fileTree !== undefined) updateData.file_tree = updates.fileTree;
+        if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
+
+        const { error } = await supabase
+          .from('projects')
+          .update(updateData)
+          .eq('id', id);
+
+        if (error) {
+          console.error('Failed to update project:', error.message);
         }
-        return prev;
-      });
+
+        // 로컬 상태 업데이트
+        setProjects((prevProjects) =>
+          prevProjects.map((p) =>
+            p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
+          )
+        );
+        setCurrentProject((prev) => {
+          if (prev?.id === id) {
+            return { ...prev, ...updates, updatedAt: new Date() };
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error('Error updating project:', err);
+      }
     },
     []
   );
 
-  const deleteProject = useCallback((id: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    setCurrentProject((prev) => (prev?.id === id ? null : prev));
+  const deleteProject = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to delete project:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      setCurrentProject((prev) => (prev?.id === id ? null : prev));
+    } catch (err) {
+      console.error('Error deleting project:', err);
+    }
   }, []);
 
   const selectProject = useCallback((id: string) => {
@@ -157,122 +233,313 @@ export function CreativeProvider({
 
   // ==================== 캐릭터 관리 ====================
   const addCharacter = useCallback(
-    (character: Character) => {
+    async (character: Character) => {
+      try {
+        if (!currentProject) return;
+
+        // Supabase에 저장
+        const { error } = await supabase
+          .from('characters')
+          .insert([
+            {
+              id: character.id,
+              project_id: currentProject.id,
+              name: character.name,
+              age: character.age || null,
+              role: character.role,
+              description: character.description,
+              appearance: character.appearance,
+              personality: character.personality,
+              backstory: character.backstory,
+              goals: character.goals || null,
+              image_url: character.imageUrl || null,
+              created_at: character.createdAt.toISOString(),
+              updated_at: character.updatedAt.toISOString(),
+            },
+          ]);
+
+        if (error) {
+          console.error('Failed to add character:', error.message);
+        }
+
+        // 로컬 상태 업데이트
+        setCurrentProject((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            characters: [...prev.characters, character],
+            updatedAt: new Date(),
+          };
+        });
+      } catch (err) {
+        console.error('Error adding character:', err);
+      }
+    },
+    [currentProject]
+  );
+
+  const updateCharacter = useCallback(async (id: string, updates: Partial<Character>) => {
+    try {
+      // Supabase에 업데이트
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('characters')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to update character:', error.message);
+      }
+
+      // 로컬 상태 업데이트
       setCurrentProject((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          characters: [...prev.characters, character],
+          characters: prev.characters.map((c) =>
+            c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
+          ),
           updatedAt: new Date(),
         };
       });
-    },
-    []
-  );
-
-  const updateCharacter = useCallback((id: string, updates: Partial<Character>) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        characters: prev.characters.map((c) =>
-          c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
-        ),
-        updatedAt: new Date(),
-      };
-    });
+    } catch (err) {
+      console.error('Error updating character:', err);
+    }
   }, []);
 
-  const deleteCharacter = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        characters: prev.characters.filter((c) => c.id !== id),
-        updatedAt: new Date(),
-      };
-    });
+  const deleteCharacter = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('characters')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to delete character:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          characters: prev.characters.filter((c) => c.id !== id),
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error deleting character:', err);
+    }
   }, []);
 
   // ==================== 씬/장면 관리 ====================
-  const addSceneEvent = useCallback((event: SceneEvent) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        timeline: {
-          ...prev.timeline,
-          events: [...prev.timeline.events, event],
-        },
-        updatedAt: new Date(),
+  const addSceneEvent = useCallback(async (event: SceneEvent) => {
+    try {
+      if (!currentProject) return;
+
+      // Supabase에 저장
+      const { error } = await supabase
+        .from('scene_events')
+        .insert([
+          {
+            id: event.id,
+            project_id: currentProject.id,
+            title: event.title,
+            description: event.description,
+            timestamp: event.timestamp,
+            character_ids: event.characterIds,
+            created_at: event.createdAt.toISOString(),
+            updated_at: event.updatedAt.toISOString(),
+          },
+        ]);
+
+      if (error) {
+        console.error('Failed to add scene event:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: [...prev.timeline.events, event],
+          },
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error adding scene event:', err);
+    }
+  }, [currentProject]);
+
+  const updateSceneEvent = useCallback(async (id: string, updates: Partial<SceneEvent>) => {
+    try {
+      // Supabase에 업데이트
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
       };
-    });
+
+      const { error } = await supabase
+        .from('scene_events')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to update scene event:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: prev.timeline.events.map((e) =>
+              e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e
+            ),
+          },
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error updating scene event:', err);
+    }
   }, []);
 
-  const updateSceneEvent = useCallback((id: string, updates: Partial<SceneEvent>) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        timeline: {
-          ...prev.timeline,
-          events: prev.timeline.events.map((e) =>
-            e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e
-          ),
-        },
-        updatedAt: new Date(),
-      };
-    });
-  }, []);
+  const deleteSceneEvent = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('scene_events')
+        .delete()
+        .eq('id', id);
 
-  const deleteSceneEvent = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        timeline: {
-          ...prev.timeline,
-          events: prev.timeline.events.filter((e) => e.id !== id),
-        },
-        updatedAt: new Date(),
-      };
-    });
+      if (error) {
+        console.error('Failed to delete scene event:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: prev.timeline.events.filter((e) => e.id !== id),
+          },
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error deleting scene event:', err);
+    }
   }, []);
 
   // ==================== 에피소드 관리 ====================
-  const addEpisode = useCallback((episode: import('@/types').Episode) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        episodes: [...prev.episodes, episode],
-        updatedAt: new Date(),
+  const addEpisode = useCallback(async (episode: import('@/types').Episode) => {
+    try {
+      if (!currentProject) return;
+
+      // Supabase에 저장
+      const { error } = await supabase
+        .from('episodes')
+        .insert([
+          {
+            id: episode.id,
+            project_id: currentProject.id,
+            title: episode.title,
+            summary: episode.summary || null,
+            chapter_number: episode.chapterNumber || null,
+            scenes: episode.scenes || [],
+            created_at: episode.createdAt.toISOString(),
+            updated_at: episode.updatedAt.toISOString(),
+          },
+        ]);
+
+      if (error) {
+        console.error('Failed to add episode:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          episodes: [...prev.episodes, episode],
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error adding episode:', err);
+    }
+  }, [currentProject]);
+
+  const updateEpisode = useCallback(async (id: string, updates: Partial<import('@/types').Episode>) => {
+    try {
+      // Supabase에 업데이트
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
       };
-    });
+
+      const { error } = await supabase
+        .from('episodes')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to update episode:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          episodes: prev.episodes.map((e) =>
+            e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e
+          ),
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error updating episode:', err);
+    }
   }, []);
 
-  const updateEpisode = useCallback((id: string, updates: Partial<import('@/types').Episode>) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        episodes: prev.episodes.map((e) =>
-          e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e
-        ),
-        updatedAt: new Date(),
-      };
-    });
-  }, []);
+  const deleteEpisode = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('episodes')
+        .delete()
+        .eq('id', id);
 
-  const deleteEpisode = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        episodes: prev.episodes.filter((e) => e.id !== id),
-        updatedAt: new Date(),
-      };
-    });
+      if (error) {
+        console.error('Failed to delete episode:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          episodes: prev.episodes.filter((e) => e.id !== id),
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error deleting episode:', err);
+    }
   }, []);
 
   // ==================== 폴더/파일 관리 ====================
@@ -426,93 +693,217 @@ export function CreativeProvider({
   }, []);
 
   // ==================== Todo 관리 ====================
-  const addTodo = useCallback((todo: TodoItem) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        todos: [...(prev.todos || []), todo],
-        updatedAt: new Date(),
+  const addTodo = useCallback(async (todo: TodoItem) => {
+    try {
+      if (!currentProject) return;
+
+      // Supabase에 저장
+      const { error } = await supabase
+        .from('todos')
+        .insert([
+          {
+            id: todo.id,
+            project_id: currentProject.id,
+            title: todo.title,
+            description: todo.description || null,
+            completed: todo.completed,
+            priority: todo.priority || 'medium',
+            due_date: todo.dueDate ? new Date(todo.dueDate).toISOString() : null,
+            created_at: todo.createdAt.toISOString(),
+            updated_at: todo.updatedAt.toISOString(),
+          },
+        ]);
+
+      if (error) {
+        console.error('Failed to add todo:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          todos: [...(prev.todos || []), todo],
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error adding todo:', err);
+    }
+  }, [currentProject]);
+
+  const updateTodo = useCallback(async (id: string, updates: Partial<TodoItem>) => {
+    try {
+      // Supabase에 업데이트
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
       };
-    });
+
+      const { error } = await supabase
+        .from('todos')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to update todo:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          todos: (prev.todos || []).map((t) =>
+            t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
+          ),
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error updating todo:', err);
+    }
   }, []);
 
-  const updateTodo = useCallback((id: string, updates: Partial<TodoItem>) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        todos: (prev.todos || []).map((t) =>
-          t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
-        ),
-        updatedAt: new Date(),
-      };
-    });
-  }, []);
+  const deleteTodo = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('todos')
+        .delete()
+        .eq('id', id);
 
-  const deleteTodo = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        todos: (prev.todos || []).filter((t) => t.id !== id),
-        updatedAt: new Date(),
-      };
-    });
+      if (error) {
+        console.error('Failed to delete todo:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          todos: (prev.todos || []).filter((t) => t.id !== id),
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error deleting todo:', err);
+    }
   }, []);
 
   // ==================== 마인드맵 관리 ====================
-  const addMindMapNode = useCallback((node: MindMapNode) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        mindMap: [...(prev.mindMap || []), node],
-        updatedAt: new Date(),
+  const addMindMapNode = useCallback(async (node: MindMapNode) => {
+    try {
+      if (!currentProject) return;
+
+      // Supabase에 저장
+      const { error } = await supabase
+        .from('mindmap_nodes')
+        .insert([
+          {
+            id: node.id,
+            project_id: currentProject.id,
+            title: node.title,
+            description: node.description || null,
+            children: node.children || [],
+            created_at: node.createdAt.toISOString(),
+            updated_at: node.updatedAt.toISOString(),
+          },
+        ]);
+
+      if (error) {
+        console.error('Failed to add mindmap node:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          mindMap: [...(prev.mindMap || []), node],
+          updatedAt: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error('Error adding mindmap node:', err);
+    }
+  }, [currentProject]);
+
+  const updateMindMapNode = useCallback(async (id: string, updates: Partial<MindMapNode>) => {
+    try {
+      // Supabase에 업데이트
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
       };
-    });
+
+      const { error } = await supabase
+        .from('mindmap_nodes')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to update mindmap node:', error.message);
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+
+        const updateNodeInTree = (nodes: MindMapNode[]): boolean => {
+          for (let node of nodes) {
+            if (node.id === id) {
+              Object.assign(node, updates);
+              node.updatedAt = new Date();
+              return true;
+            }
+            if (node.children && updateNodeInTree(node.children)) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        let updatedMindMap = JSON.parse(JSON.stringify(prev.mindMap || []));
+        updateNodeInTree(updatedMindMap);
+        return { ...prev, mindMap: updatedMindMap, updatedAt: new Date() };
+      });
+    } catch (err) {
+      console.error('Error updating mindmap node:', err);
+    }
   }, []);
 
-  const updateMindMapNode = useCallback((id: string, updates: Partial<MindMapNode>) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
+  const deleteMindMapNode = useCallback(async (id: string) => {
+    try {
+      // Supabase에서 삭제
+      const { error } = await supabase
+        .from('mindmap_nodes')
+        .delete()
+        .eq('id', id);
 
-      const updateNodeInTree = (nodes: MindMapNode[]): boolean => {
-        for (let node of nodes) {
-          if (node.id === id) {
-            Object.assign(node, updates);
-            node.updatedAt = new Date();
-            return true;
-          }
-          if (node.children && updateNodeInTree(node.children)) {
-            return true;
-          }
-        }
-        return false;
-      };
+      if (error) {
+        console.error('Failed to delete mindmap node:', error.message);
+      }
 
-      let updatedMindMap = JSON.parse(JSON.stringify(prev.mindMap || []));
-      updateNodeInTree(updatedMindMap);
-      return { ...prev, mindMap: updatedMindMap, updatedAt: new Date() };
-    });
-  }, []);
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
 
-  const deleteMindMapNode = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      if (!prev) return prev;
+        const deleteNodeFromTree = (nodes: MindMapNode[]): MindMapNode[] => {
+          return nodes
+            .filter((node) => node.id !== id)
+            .map((node) => ({
+              ...node,
+              children: node.children ? deleteNodeFromTree(node.children) : undefined,
+            }));
+        };
 
-      const deleteNodeFromTree = (nodes: MindMapNode[]): MindMapNode[] => {
-        return nodes
-          .filter((node) => node.id !== id)
-          .map((node) => ({
-            ...node,
-            children: node.children ? deleteNodeFromTree(node.children) : undefined,
-          }));
-      };
-
-      const updatedMindMap = deleteNodeFromTree(prev.mindMap || []);
-      return { ...prev, mindMap: updatedMindMap, updatedAt: new Date() };
-    });
+        const updatedMindMap = deleteNodeFromTree(prev.mindMap || []);
+        return { ...prev, mindMap: updatedMindMap, updatedAt: new Date() };
+      });
+    } catch (err) {
+      console.error('Error deleting mindmap node:', err);
+    }
   }, []);
 
   // ==================== 설정 관리 ====================

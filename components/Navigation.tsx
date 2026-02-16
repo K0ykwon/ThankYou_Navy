@@ -7,20 +7,20 @@ export default function Navigation() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: '대시보드', icon: '📊' },
+    { href: '/main', label: '메인', icon: '🏠' },
     { href: '/editor', label: '텍스트 에디터', icon: '✍️' },
     { href: '/characters', label: '캐릭터 관리', icon: '👥' },
     { href: '/storyboard', label: '스토리보드', icon: '🎬' },
+    { href: '/settings', label: '설정', icon: '⚙️' },
   ];
 
   return (
-    <nav className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white shadow-lg">
+    <nav className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white shadow-lg overflow-y-auto">
       <div className="p-6">
-        <h1 className="text-2xl font-bold">🎨 창작 스튜디오</h1>
-        <p className="text-sm text-blue-200 mt-2">창작 보조 도구</p>
+        <h2 className="text-lg font-bold">📚 네비게이션</h2>
       </div>
 
-      <div className="mt-8 space-y-2 px-4">
+      <div className="mt-4 space-y-2 px-4">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -38,7 +38,9 @@ export default function Navigation() {
       </div>
 
       <div className="absolute bottom-6 left-4 right-4 border-t border-blue-700 pt-6">
-        <p className="text-xs text-blue-300">© 2026 Creative Studio</p>
+        <Link href="/" className="text-xs text-blue-300 hover:text-blue-100 transition-colors">
+          ← 프로젝트 목록
+        </Link>
       </div>
     </nav>
   );

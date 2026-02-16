@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import SettingsModal from '@/components/SettingsModal';
+import Navigation from '@/components/Navigation';
 import { useCreative } from '@/context/CreativeContext';
 
 export default function ClientShell({
@@ -12,7 +14,11 @@ export default function ClientShell({
   children: React.ReactNode;
 }) {
   const { currentProject } = useCreative();
+  const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
+  
+  // 프로젝트 페이지인지 확인 (/, /main, /editor 등)
+  const isProjectPage = ['/', '/main', '/editor', '/characters', '/storyboard', '/settings'].includes(pathname);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -37,8 +43,9 @@ export default function ClientShell({
 
       {/* Main Content */}
       <div className="flex flex-1">
+        {currentProject && isProjectPage && <Navigation />}
         {currentProject && <Sidebar />}
-        <main className={currentProject ? 'flex-1' : 'flex-1'}>
+        <main className={currentProject ? 'flex-1 ml-64' : 'flex-1'}>
           {children}
         </main>
       </div>

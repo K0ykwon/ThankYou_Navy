@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCreative } from '@/context/CreativeContext';
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function MainDashboard() {
   const { currentProject } = useCreative();
@@ -21,11 +22,16 @@ export default function MainDashboard() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          {currentProject.title}
-        </h1>
-        <p className="text-gray-600">{currentProject.description}</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            {currentProject.title}
+          </h1>
+          <p className="text-gray-600">{currentProject.description}</p>
+        </div>
+        <Link href="/" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
+          ← 프로젝트 목록
+        </Link>
       </div>
 
       {/* Project Info Cards */}
