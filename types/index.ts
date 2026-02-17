@@ -69,6 +69,16 @@ export interface Episode {
   updatedAt: Date;
 }
 
+// ==================== 네거티브 아크 (부정적 호) ====================
+export interface NegativeArcPoint {
+  id: string;
+  phase: string;
+  description: string;
+  emotionalLow: number; // 1-10 scale
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // ==================== 소설/프로젝트 ====================
 export interface CreativeProject {
   id: string;
@@ -80,6 +90,7 @@ export interface CreativeProject {
   characters: Character[];
   episodes: Episode[];
   timeline: Timeline;
+  negativeArc?: NegativeArcPoint[];
   worldSetting?: string;
   mindMap?: MindMapNode[];
   todos?: TodoItem[];

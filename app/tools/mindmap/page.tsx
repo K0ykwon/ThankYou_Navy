@@ -22,7 +22,7 @@ export default function MindmapPage() {
     );
   }
 
-  const mindmap = (currentProject.mindmap || {
+  const mindmap = (currentProject.mindMap || {
     id: '1',
     text: '프로젝트',
     children: [],
