@@ -41,7 +41,7 @@ function TreeNode({
   return (
     <div>
       <div
-        className="flex items-center px-3 py-2 hover:bg-gray-700 cursor-pointer rounded transition-colors"
+        className="flex items-center px-3 py-2 hover:bg-gray-700 dark:hover:bg-gray-700 cursor-pointer rounded transition-colors text-gray-200 dark:text-gray-300"
         style={{ paddingLeft: `${paddingLeft}px` }}
       >
         {type === 'folder' && children && children.length > 0 && (

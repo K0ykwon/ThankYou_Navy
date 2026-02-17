@@ -56,18 +56,21 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     <>
       {/* 배경 오버레이 */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+        className="fixed inset-0 z-40 transition-opacity backdrop-blur-sm"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        }}
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-2xl z-50 max-h-[90vh] overflow-y-auto">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-lg shadow-2xl z-50 max-h-[90vh] overflow-y-auto">
         {/* 헤더 */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">⚙️ 설정</h2>
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">⚙️ 설정</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl leading-none transition-colors"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-2xl leading-none transition-colors"
             aria-label="닫기"
           >
             ×
@@ -78,7 +81,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <div className="p-6 space-y-6">
           {/* 폰트 크기 - Range Slider */}
           <div>
-            <label className="block text-sm font-bold text-gray-900 mb-3">
+            <label className="block text-sm font-bold text-gray-900 dark:text-white mb-3">
               📝 글자 크기 ({fontSizeValue}px)
             </label>
             <input
@@ -88,16 +91,16 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               step="2"
               value={fontSizeValue}
               onChange={(e) => handleFontSizeChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
               <span>작음 12px</span>
               <span>기본 16px</span>
               <span>큼 20px</span>
               <span>매우 큼 24px</span>
             </div>
             <div
-              className="mt-4 p-3 bg-gray-50 rounded border border-gray-200 text-gray-600"
+              className="mt-4 p-3 bg-gray-50 rounded border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
               style={{ fontSize: `${fontSizeValue}px` }}
             >
               이 크기로 텍스트가 표시됩니다.
@@ -106,20 +109,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* 폰트 선택 - Combobox */}
           <div>
-            <label className="block text-sm font-bold text-gray-900 mb-2">
+            <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">
               🔤 폰트 종류
             </label>
             <select
               value={userSettings.fontFamily}
               onChange={(e) => setFontFamily(e.target.value as 'sans' | 'serif' | 'mono')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
               <option value="sans">Sans Serif (산세리프)</option>
               <option value="serif">Serif (세리프)</option>
               <option value="mono">Monospace (고정폭)</option>
             </select>
             <div
-              className="mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-gray-600"
+              className="mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
               style={{ fontFamily: fontFamilyMap[userSettings.fontFamily] }}
             >
               이 폰트로 텍스트가 표시됩니다.
@@ -128,7 +131,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* 테마 모드 - Toggle Buttons */}
           <div>
-            <label className="block text-sm font-bold text-gray-900 mb-3">
+            <label className="block text-sm font-bold text-gray-900 dark:text-white mb-3">
               🎨 테마
             </label>
             <div className="flex gap-3">
@@ -156,9 +159,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* 현재 설정 요약 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-bold text-blue-900 mb-2 text-sm">현재 설정</h3>
-            <ul className="text-xs text-blue-800 space-y-1">
+          <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h3 className="font-bold text-blue-900 dark:text-blue-100 mb-2 text-sm">현재 설정</h3>
+            <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
               <li>📝 글자 크기: {fontSizeValue}px</li>
               <li>
                 🔤 폰트:{' '}

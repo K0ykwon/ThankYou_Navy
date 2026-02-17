@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-size-base: 1rem;
+  --font-family-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 @theme inline {
@@ -12,15 +14,243 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* 라이트 모드 기본 */
+html {
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-body);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  color: #171717;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ==================== 다크 모드 전체 스타일 ==================== */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark * {
+  background-color: #0a0a0a;
+  color: #ededed;
+}
+
+/* 배경색 */
+html.dark .bg-white {
+  background-color: #1a1a1a !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #111111 !important;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #1a1a1a !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #2a2a2a !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: #1a1a2e !important;
+}
+
+html.dark .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+html.dark .bg-blue-700 {
+  background-color: #1d4ed8 !important;
+}
+
+html.dark .bg-gradient-to-b {
+  background: linear-gradient(to bottom, #0a0a0a, #0a0a0a) !important;
+}
+
+html.dark .bg-gradient-to-r {
+  background: linear-gradient(to right, #0a0a0a, #0a0a0a) !important;
+}
+
+/* 텍스트색 */
+html.dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+html.dark .text-gray-700 {
+  color: #e5e5e5 !important;
+}
+
+html.dark .text-gray-600 {
+  color: #d4d4d4 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #a0a0a0 !important;
+}
+
+html.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-gray-200 {
+  color: #e5e7eb !important;
+}
+
+html.dark .text-blue-900 {
+  color: #60a5fa !important;
+}
+
+html.dark .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+html.dark .text-white {
+  color: #ffffff !important;
+}
+
+/* 테두리색 */
+html.dark .border-gray-200 {
+  border-color: #333333 !important;
+}
+
+html.dark .border-gray-300 {
+  border-color: #404040 !important;
+}
+
+html.dark .border-gray-400 {
+  border-color: #555555 !important;
+}
+
+html.dark .border-blue-200 {
+  border-color: #1e3a8a !important;
+}
+
+/* 특수 요소 */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1a1a1a !important;
+  color: #ededed !important;
+  border-color: #333333 !important;
+}
+
+html.dark input::placeholder {
+  color: #808080 !important;
+}
+
+html.dark option {
+  background-color: #1a1a1a !important;
+  color: #ededed !important;
+}
+
+html.dark button:not(.bg-blue-600):not(.bg-blue-700):not(.bg-gray-800) {
+  background-color: #2a2a2a !important;
+  color: #ededed !important;
+  border-color: #333333 !important;
+}
+
+html.dark ::-webkit-scrollbar {
+  background-color: #1a1a1a !important;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background-color: #0a0a0a !important;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: #404040 !important;
+}
+
+/* Range 입력 필드 다크 모드 */
+html.dark input[type="range"] {
+  background: linear-gradient(to right, #404040 0%, #404040 100%) !important;
+}
+
+html.dark input[type="range"]::-webkit-slider-thumb {
+  background-color: #3b82f6 !important;
+  border-color: #1e3a8a !important;
+}
+
+html.dark input[type="range"]::-moz-range-thumb {
+  background-color: #3b82f6 !important;
+  border-color: #1e3a8a !important;
+}
+
+/* ==================== 일반 버튼 다크 모드 ==================== */
+html.dark button {
+  transition: all 0.2s ease;
+}
+
+html.dark button:not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-500):not(.bg-gray-800):not(.bg-red-600):not(.bg-red-700):not([class*="bg-gradient"]) {
+  background-color: #2a2a2a !important;
+  color: #ededed !important;
+  border-color: #333333 !important;
+}
+
+/* ==================== 링크 다크 모드 ==================== */
+html.dark a {
+  color: #60a5fa !important;
+}
+
+html.dark a:hover {
+  color: #93c5fd !important;
+}
+
+/* ==================== 전체 페이지 배경 ==================== */
+html.dark > body {
+  background: linear-gradient(to bottom, #0a0a0a, #0a0a0a) !important;
+}
+
+/* ==================== 그라디언트 배경 ==================== */
+html.dark .bg-gradient-to-b {
+  background: linear-gradient(to bottom, #0a0a0a, #0a0a0a) !important;
+}
+
+html.dark .bg-gradient-to-r {
+  background: linear-gradient(to right, #0a0a0a, #0a0a0a) !important;
+}
+
+html.dark .from-blue-50 {
+  --tw-gradient-from: #0f172a !important;
+}
+
+html.dark .to-gray-50 {
+  --tw-gradient-to: #0f172a !important;
+}
+
+/* ==================== 섹션과 카드 ==================== */
+html.dark section,
+html.dark article,
+html.dark div[class*="p-"] {
+  background-color: #0a0a0a;
+  color: #ededed;
+}
+
+/* ==================== 확인 모달과 대화 ==================== */
+html.dark .fixed.inset-0 {
+  background-color: rgba(10, 10, 10, 0.8) !important;
+}
+
+/* ==================== 스크롤바 ==================== */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #505050;
 }

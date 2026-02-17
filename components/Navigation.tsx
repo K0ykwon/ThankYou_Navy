@@ -15,7 +15,7 @@ export default function Navigation() {
   ];
 
   return (
-    <nav className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white shadow-lg overflow-y-auto">
+    <nav className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-blue-900 to-blue-800 dark:from-gray-900 dark:to-gray-800 text-white shadow-lg overflow-y-auto">
       <div className="p-6">
         <h2 className="text-lg font-bold">📚 네비게이션</h2>
       </div>
@@ -27,8 +27,8 @@ export default function Navigation() {
             href={item.href}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
               pathname === item.href
-                ? 'bg-blue-600 text-white'
-                : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                : 'text-blue-100 dark:text-gray-300 hover:bg-blue-700 dark:hover:bg-gray-700 hover:text-white'
             }`}
           >
             <span className="text-xl">{item.icon}</span>
@@ -37,8 +37,8 @@ export default function Navigation() {
         ))}
       </div>
 
-      <div className="absolute bottom-6 left-4 right-4 border-t border-blue-700 pt-6">
-        <Link href="/" className="text-xs text-blue-300 hover:text-blue-100 transition-colors">
+      <div className="absolute bottom-6 left-4 right-4 border-t border-blue-700 dark:border-gray-700 pt-6">
+        <Link href="/" className="text-xs text-blue-300 dark:text-gray-400 hover:text-blue-100 dark:hover:text-gray-200 transition-colors">
           ← 프로젝트 목록
         </Link>
       </div>

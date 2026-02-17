@@ -37,11 +37,11 @@ export default function EditorPage() {
   if (!currentProject) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
-        <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-600 text-lg mb-4">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
             프로젝트를 먼저 선택하세요
           </p>
-          <Link href="/" className="text-blue-600 hover:text-blue-800 underline">
+          <Link href="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
             프로젝트로 돌아가기
           </Link>
         </div>
@@ -52,20 +52,20 @@ export default function EditorPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <div className="max-w-6xl mx-auto flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
               Text Editor
             </h1>
-            <p className="text-gray-600">{currentProject.title}</p>
+            <p className="text-gray-600 dark:text-gray-400">{currentProject.title}</p>
           </div>
           <button
             onClick={handleSave}
             className={`py-2 px-6 rounded-lg font-bold transition-colors ${
               isSaved
-                ? 'bg-green-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? 'bg-green-600 dark:bg-green-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
             }`}
           >
             {isSaved ? '✓ Saved' : 'Save'}
@@ -74,19 +74,19 @@ export default function EditorPage() {
       </div>
 
       {/* Stats */}
-      <div className="bg-blue-50 border-b border-gray-200 p-6">
+      <div className="bg-blue-50 dark:bg-blue-900 border-b border-gray-200 dark:border-gray-700 p-6">
         <div className="max-w-6xl mx-auto grid grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-gray-600 text-sm">Word Count</p>
-            <p className="text-2xl font-bold text-blue-600">{wordCount}</p>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Word Count</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{wordCount}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-gray-600 text-sm">Character Count</p>
-            <p className="text-2xl font-bold text-blue-600">{charCount}</p>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Character Count</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{charCount}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-gray-600 text-sm">Read Time (min)</p>
-            <p className="text-2xl font-bold text-blue-600">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Read Time (min)</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{""}
               {Math.ceil(wordCount / 200)}
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function EditorPage() {
           <textarea
             value={content}
             onChange={handleContentChange}
-            className="w-full h-full p-6 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 resize-none font-mono text-gray-800"
+            className="w-full h-full p-6 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 resize-none font-mono text-gray-800 dark:text-white dark:bg-gray-900"
             placeholder="Write your story here..."
           />
         </div>
@@ -107,7 +107,7 @@ export default function EditorPage() {
 
       {/* Unsaved Alert */}
       {!isSaved && (
-        <div className="bg-yellow-50 border-t-2 border-yellow-400 p-4 text-yellow-800">
+        <div className="bg-yellow-50 dark:bg-yellow-900 border-t-2 border-yellow-400 dark:border-yellow-700 p-4 text-yellow-800 dark:text-yellow-200">
           <p className="max-w-6xl mx-auto">
             Unsaved changes
           </p>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import {
   CreativeProject,
   Character,
@@ -93,9 +93,34 @@ export function CreativeProvider({
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
+      // localStorage에서 저장된 설정을 로드합니다
+      if (typeof window !== 'undefined') {
+        const savedSettings = localStorage.getItem('creativeStudioSettings');
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            return {
+              ...defaultSettings,
+              ...parsed,
+              createdAt: new Date(parsed.createdAt),
+              updatedAt: new Date(parsed.updatedAt),
+            };
+          } catch (err) {
+            console.error('Failed to parse settings from localStorage:', err);
+          }
+        }
+      }
       return defaultSettings;
     }
   );
+
+  // 설정이 변경될 때마다 localStorage에 저장합니다
+  useEffect(() => {
+    if (userSettings && typeof window !== 'undefined') {
+      localStorage.setItem('creativeStudioSettings', JSON.stringify(userSettings));
+    }
+  }, [userSettings]);
 
   // ==================== 프로젝트 기본 관리 ====================
   const createProject = useCallback(
@@ -342,27 +367,29 @@ export function CreativeProvider({
     try {
       if (!currentProject) return;
 
-      // Supabase에 저장
-      const { error } = await supabase
-        .from('scene_events')
-        .insert([
-          {
-            id: event.id,
-            project_id: currentProject.id,
-            title: event.title,
-            description: event.description,
-            timestamp: event.timestamp,
-            character_ids: event.characterIds,
-            created_at: event.createdAt.toISOString(),
-            updated_at: event.updatedAt.toISOString(),
-          },
-        ]);
+      // Supabase에 저장 (Supabase가 설정된 경우만)
+      if (supabase) {
+        const { error } = await supabase
+          .from('scene_events')
+          .insert([
+            {
+              id: event.id,
+              project_id: currentProject.id,
+              title: event.title,
+              description: event.description,
+              timestamp: event.timestamp,
+              character_ids: event.characterIds,
+              created_at: event.createdAt.toISOString(),
+              updated_at: event.updatedAt.toISOString(),
+            },
+          ]);
 
-      if (error) {
-        console.error('Failed to add scene event:', error.message);
+        if (error) {
+          console.warn('⚠️  Supabase 저장 실패 (로컬에만 저장됨):', error.message);
+        }
       }
 
-      // 로컬 상태 업데이트
+      // 로컬 상태 업데이트 (Supabase 성공 여부와 관계없이)
       setCurrentProject((prev) => {
         if (!prev) return prev;
         return {
@@ -375,28 +402,47 @@ export function CreativeProvider({
         };
       });
     } catch (err) {
-      console.error('Error adding scene event:', err);
+      console.warn('로컬에만 저장됩니다:', err);
+      // 로컬 상태는 여전히 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: [...prev.timeline.events, event],
+          },
+          updatedAt: new Date(),
+        };
+      });
     }
   }, [currentProject]);
 
   const updateSceneEvent = useCallback(async (id: string, updates: Partial<SceneEvent>) => {
     try {
-      // Supabase에 업데이트
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
+      // Supabase에 업데이트 (Supabase가 설정된 경우만)
+      if (supabase) {
+        const updateData: any = {
+          updated_at: new Date().toISOString(),
+        };
 
-      const { error } = await supabase
-        .from('scene_events')
-        .update(updateData)
-        .eq('id', id);
+        // 실제 DB 컬럼에 해당하는 필드만 추가
+        if (updates.title !== undefined) updateData.title = updates.title;
+        if (updates.description !== undefined) updateData.description = updates.description;
+        if (updates.timestamp !== undefined) updateData.timestamp = updates.timestamp;
+        if (updates.characterIds !== undefined) updateData.character_ids = updates.characterIds;
 
-      if (error) {
-        console.error('Failed to update scene event:', error.message);
+        const { error } = await supabase
+          .from('scene_events')
+          .update(updateData)
+          .eq('id', id);
+
+        if (error) {
+          console.warn('⚠️  Supabase 업데이트 실패 (로컬에만 저장됨):', error.message);
+        }
       }
 
-      // 로컬 상태 업데이트
+      // 로컬 상태 업데이트 (Supabase 성공 여부와 관계없이)
       setCurrentProject((prev) => {
         if (!prev) return prev;
         return {
@@ -411,23 +457,39 @@ export function CreativeProvider({
         };
       });
     } catch (err) {
-      console.error('Error updating scene event:', err);
+      console.warn('로컬에만 저장됩니다:', err);
+      // 로컬 상태는 여전히 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: prev.timeline.events.map((e) =>
+              e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e
+            ),
+          },
+          updatedAt: new Date(),
+        };
+      });
     }
   }, []);
 
   const deleteSceneEvent = useCallback(async (id: string) => {
     try {
-      // Supabase에서 삭제
-      const { error } = await supabase
-        .from('scene_events')
-        .delete()
-        .eq('id', id);
+      // Supabase에서 삭제 (Supabase가 설정된 경우만)
+      if (supabase) {
+        const { error } = await supabase
+          .from('scene_events')
+          .delete()
+          .eq('id', id);
 
-      if (error) {
-        console.error('Failed to delete scene event:', error.message);
+        if (error) {
+          console.warn('⚠️  Supabase 삭제 실패 (로컬에만 반영됨):', error.message);
+        }
       }
 
-      // 로컬 상태 업데이트
+      // 로컬 상태 업데이트 (Supabase 성공 여부와 관계없이)
       setCurrentProject((prev) => {
         if (!prev) return prev;
         return {
@@ -440,7 +502,19 @@ export function CreativeProvider({
         };
       });
     } catch (err) {
-      console.error('Error deleting scene event:', err);
+      console.warn('로컬에만 반영됩니다:', err);
+      // 로컬 상태는 여전히 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            events: prev.timeline.events.filter((e) => e.id !== id),
+          },
+          updatedAt: new Date(),
+        };
+      });
     }
   }, []);
 
