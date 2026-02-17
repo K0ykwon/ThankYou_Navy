@@ -59,6 +59,9 @@ interface CreativeContextType {
   updateMindMapNode: (id: string, updates: Partial<MindMapNode>) => void;
   deleteMindMapNode: (id: string) => void;
 
+  // 프로젝트 필드 범용 업데이트
+  updateProjectField: (fieldName: string, value: any) => void;
+
   // 설정 관리
   userSettings: UserSettings | null;
   updateUserSettings: (updates: Partial<UserSettings>) => void;
@@ -122,6 +125,75 @@ export function CreativeProvider({
     }
   }, [userSettings]);
 
+  // ==================== 초기화: Supabase에서 프로젝트 로드 ====================
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        // Supabase가 설정되어 있으면 DB에서 로드
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('*');
+
+          if (error) {
+            console.warn('⚠️ Supabase에서 프로젝트 로드 실패:', error.message);
+            // localStorage에서 캐시된 프로젝트 로드
+            loadProjectsFromCache();
+          } else if (data && data.length > 0) {
+            // Supabase에서 불러온 프로젝트를 로컬 상태로 변환
+            const loadedProjects: CreativeProject[] = data.map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              genre: p.genre || undefined,
+              author: p.author || undefined,
+              fileTree: p.file_tree || [],
+              characters: p.characters || [],
+              episodes: p.episodes || [],
+              timeline: p.timeline || { id: p.id, projectId: p.id, events: [], totalDuration: 0 },
+              todos: p.todos || [],
+              mindMap: p.mindmap || [],
+              worldSetting: p.world_setting || undefined,
+              createdAt: new Date(p.created_at),
+              updatedAt: new Date(p.updated_at),
+            }));
+
+            setProjects(loadedProjects);
+            // 로컬 캐시에도 저장
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('creativeStudioProjects', JSON.stringify(loadedProjects));
+            }
+            console.log('✅ Supabase에서 프로젝트 로드 완료:', loadedProjects.length, '개');
+          }
+        } else {
+          // Supabase가 없으면 localStorage에서 로드
+          loadProjectsFromCache();
+        }
+      } catch (err) {
+        console.warn('프로젝트 로드 중 오류:', err);
+        loadProjectsFromCache();
+      }
+    };
+
+    const loadProjectsFromCache = () => {
+      if (typeof window !== 'undefined') {
+        const cachedProjects = localStorage.getItem('creativeStudioProjects');
+        if (cachedProjects) {
+          try {
+            const parsed = JSON.parse(cachedProjects);
+            setProjects(parsed);
+            console.log('✅ localStorage에서 프로젝트 로드 완료:', parsed.length, '개');
+          } catch (err) {
+            console.error('localStorage 프로젝트 파싱 실패:', err);
+          }
+        }
+      }
+    };
+
+    // 페이지 로드 시 한 번만 실행
+    loadProjects();
+  }, []);
+
   // ==================== 프로젝트 기본 관리 ====================
   const createProject = useCallback(
     async (title: string, description: string, genre?: string, author?: string) => {
@@ -148,38 +220,74 @@ export function CreativeProvider({
           updatedAt: new Date(),
         };
 
-        // Supabase에 저장 (기본 정보만)
-        const { data, error } = await supabase
-          .from('projects')
-          .insert([
-            {
-              id,
-              title,
-              description,
-              genre: genre || null,
-              author: author || null,
-              file_tree: newProject.fileTree,
-              timeline: newProject.timeline,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ])
-          .select()
-          .single();
+        // Supabase에 저장 (Supabase가 설정된 경우만)
+        if (supabase) {
+          const { error } = await supabase
+            .from('projects')
+            .insert([
+              {
+                id,
+                title,
+                description,
+                genre: genre || null,
+                author: author || null,
+                file_tree: newProject.fileTree,
+                timeline: newProject.timeline,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ]);
 
-        if (error) {
-          console.error('Failed to create project:', error.message);
-          // 로컬에만 저장 (오프라인 모드)
-          setProjects((prev) => [...prev, newProject]);
-          setCurrentProject(newProject);
-          return;
+          if (error) {
+            console.warn('⚠️ Supabase 생성 실패 (로컬에만 저장됨):', error.message);
+          } else {
+            console.log('✅ Supabase에 프로젝트 저장 완료');
+          }
+        } else {
+          console.warn('⚠️ Supabase가 설정되지 않음. 로컬에만 저장됩니다.');
         }
 
-        // 로컬 상태 업데이트
-        setProjects((prev) => [...prev, newProject]);
+        // 로컬 상태 업데이트 및 캐시 저장
+        setProjects((prev) => {
+          const updated = [...prev, newProject];
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+          }
+          return updated;
+        });
         setCurrentProject(newProject);
       } catch (err) {
-        console.error('Error creating project:', err);
+        console.warn('프로젝트 생성 오류 (로컬에만 저장됨):', err);
+        // 에러 발생해도 로컬에는 저장
+        const id = Date.now().toString();
+        const newProject: CreativeProject = {
+          id,
+          title,
+          description,
+          genre,
+          author,
+          fileTree: [],
+          characters: [],
+          episodes: [],
+          timeline: {
+            id,
+            projectId: id,
+            events: [],
+            totalDuration: 0,
+          },
+          todos: [],
+          mindMap: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setProjects((prev) => {
+          const updated = [...prev, newProject];
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+          }
+          return updated;
+        });
+        setCurrentProject(newProject);
       }
     },
     []
@@ -188,34 +296,42 @@ export function CreativeProvider({
   const updateProject = useCallback(
     async (id: string, updates: Partial<CreativeProject>) => {
       try {
-        // Supabase에 업데이트 (실제 DB 컬럼만)
-        const updateData: any = {
-          updated_at: new Date().toISOString(),
-        };
+        // Supabase에 업데이트 (Supabase가 설정된 경우만)
+        if (supabase) {
+          const updateData: any = {
+            updated_at: new Date().toISOString(),
+          };
 
-        // 실제 DB 컬럼에 해당하는 필드만 추가
-        if (updates.title !== undefined) updateData.title = updates.title;
-        if (updates.description !== undefined) updateData.description = updates.description;
-        if (updates.genre !== undefined) updateData.genre = updates.genre;
-        if (updates.author !== undefined) updateData.author = updates.author;
-        if (updates.fileTree !== undefined) updateData.file_tree = updates.fileTree;
-        if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
+          // 실제 DB 컬럼에 해당하는 필드만 추가
+          if (updates.title !== undefined) updateData.title = updates.title;
+          if (updates.description !== undefined) updateData.description = updates.description;
+          if (updates.genre !== undefined) updateData.genre = updates.genre;
+          if (updates.author !== undefined) updateData.author = updates.author;
+          if (updates.fileTree !== undefined) updateData.file_tree = updates.fileTree;
+          if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
 
-        const { error } = await supabase
-          .from('projects')
-          .update(updateData)
-          .eq('id', id);
+          const { error } = await supabase
+            .from('projects')
+            .update(updateData)
+            .eq('id', id);
 
-        if (error) {
-          console.error('Failed to update project:', error.message);
+          if (error) {
+            console.warn('⚠️ Supabase 업데이트 실패:', error.message);
+          } else {
+            console.log('✅ Supabase에서 프로젝트 업데이트 완료');
+          }
         }
 
-        // 로컬 상태 업데이트
-        setProjects((prevProjects) =>
-          prevProjects.map((p) =>
+        // 로컬 상태 업데이트 및 캐시 저장
+        setProjects((prevProjects) => {
+          const updated = prevProjects.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
-          )
-        );
+          );
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+          }
+          return updated;
+        });
         setCurrentProject((prev) => {
           if (prev?.id === id) {
             return { ...prev, ...updates, updatedAt: new Date() };
@@ -223,7 +339,23 @@ export function CreativeProvider({
           return prev;
         });
       } catch (err) {
-        console.error('Error updating project:', err);
+        console.warn('프로젝트 업데이트 오류:', err);
+        // 에러 발생해도 로컬에는 업데이트
+        setProjects((prevProjects) => {
+          const updated = prevProjects.map((p) =>
+            p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
+          );
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+          }
+          return updated;
+        });
+        setCurrentProject((prev) => {
+          if (prev?.id === id) {
+            return { ...prev, ...updates, updatedAt: new Date() };
+          }
+          return prev;
+        });
       }
     },
     []
@@ -231,21 +363,40 @@ export function CreativeProvider({
 
   const deleteProject = useCallback(async (id: string) => {
     try {
-      // Supabase에서 삭제
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
+      // Supabase에서 삭제 (Supabase가 설정된 경우만)
+      if (supabase) {
+        const { error } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', id);
 
-      if (error) {
-        console.error('Failed to delete project:', error.message);
+        if (error) {
+          console.warn('⚠️ Supabase 삭제 실패 (로컬에만 반영됨):', error.message);
+        } else {
+          console.log('✅ Supabase에서 프로젝트 삭제 완료');
+        }
       }
 
-      // 로컬 상태 업데이트
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      // 로컬 상태 업데이트 및 캐시 저장
+      setProjects((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+        }
+        return updated;
+      });
       setCurrentProject((prev) => (prev?.id === id ? null : prev));
     } catch (err) {
-      console.error('Error deleting project:', err);
+      console.warn('프로젝트 삭제 오류:', err);
+      // 에러 발생해도 로컬에서는 삭제
+      setProjects((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('creativeStudioProjects', JSON.stringify(updated));
+        }
+        return updated;
+      });
+      setCurrentProject((prev) => (prev?.id === id ? null : prev));
     }
   }, []);
 
@@ -1004,6 +1155,46 @@ export function CreativeProvider({
     updateUserSettings({ themeMode: mode });
   }, [updateUserSettings]);
 
+  // ==================== 프로젝트 필드 범용 업데이트 ====================
+  const updateProjectField = useCallback((fieldName: string, value: any) => {
+    if (!currentProject) return;
+
+    try {
+      // Supabase 업데이트
+      if (supabase) {
+        supabase
+          .from('projects')
+          .update({ [fieldName]: value, updated_at: new Date() })
+          .eq('id', currentProject.id)
+          .then((result) => {
+            if (result.error) {
+              console.error(`Failed to update ${fieldName}:`, result.error.message);
+            }
+          });
+      }
+
+      // 로컬 상태 업데이트
+      setCurrentProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          [fieldName]: value,
+          updatedAt: new Date(),
+        };
+      });
+
+      // localStorage 업데이트
+      const updatedProject = {
+        ...currentProject,
+        [fieldName]: value,
+        updatedAt: new Date(),
+      };
+      localStorage.setItem(`project_${currentProject.id}`, JSON.stringify(updatedProject));
+    } catch (err) {
+      console.error(`Error updating ${fieldName}:`, err);
+    }
+  }, [currentProject]);
+
   const value: CreativeContextType = {
     currentProject,
     projects,
@@ -1031,6 +1222,7 @@ export function CreativeProvider({
     addMindMapNode,
     updateMindMapNode,
     deleteMindMapNode,
+    updateProjectField,
     userSettings,
     updateUserSettings,
     setFontSize,

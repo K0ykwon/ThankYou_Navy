@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCreative } from '@/context/CreativeContext';
 
 interface TreeNodeProps {
@@ -129,6 +130,7 @@ export default function Sidebar() {
     renameElement,
     deleteFileOrFolder,
   } = useCreative();
+  const pathname = usePathname();
 
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [showNewFileInput, setShowNewFileInput] = useState(false);
@@ -139,6 +141,20 @@ export default function Sidebar() {
   if (!currentProject) {
     return null;
   }
+
+  const navItems = [
+    { href: '/main', label: '메인', icon: '🏠' },
+    { href: '/editor', label: '텍스트 에디터', icon: '✍️' },
+    { href: '/characters', label: '캐릭터 관리', icon: '👥' },
+    { href: '/storyboard', label: '스토리보드', icon: '🎬' },
+  ];
+
+  const specialTools = [
+    { label: 'Todo', href: '/tools/todo' },
+    { label: 'Timeline', href: '/tools/timeline' },
+    { label: 'Mindmap', href: '/tools/mindmap' },
+    { label: 'Negative Arc', href: '/tools/negative-arc' },
+  ];
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -158,40 +174,54 @@ export default function Sidebar() {
     }
   };
 
-  const specialTools = [
-    { label: 'Todo', href: '/tools/todo' },
-    { label: 'Timeline', href: '/tools/timeline' },
-    { label: 'Mindmap', href: '/tools/mindmap' },
-    { label: 'Negative Arc', href: '/tools/negative-arc' },
-  ];
-
   return (
-    <div className="w-64 bg-gray-800 text-gray-100 h-screen overflow-y-auto flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="font-bold text-lg text-white mb-1">{currentProject.title}</h2>
-        <p className="text-xs text-gray-400">{currentProject.description}</p>
+    <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-900 dark:to-gray-800 text-white shadow-lg overflow-y-auto flex flex-col">
+      {/* ==================== 프로젝트 정보 ==================== */}
+      <div className="p-4 border-b border-gray-700 sticky top-0 bg-gradient-to-b from-gray-900 to-gray-800 z-10">
+        <h2 className="font-bold text-lg text-white mb-1 truncate">{currentProject.title}</h2>
+        <p className="text-xs text-gray-400 line-clamp-2">{currentProject.description}</p>
       </div>
 
-      {/* Actions */}
+      {/* ==================== 네비게이션 메뉴 ==================== */}
+      <div className="px-3 py-4 border-b border-gray-700">
+        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">메뉴</h3>
+        <div className="space-y-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                pathname === item.href
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ==================== 파일/폴더 관리 ==================== */}
       <div className="p-4 border-b border-gray-700">
-        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">Actions</h3>
+        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">폴더 및 파일</h3>
         <div className="space-y-2">
           <button
             onClick={() => setShowNewFolderInput(!showNewFolderInput)}
-            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
-            [+] New Folder
+            [+] 폴더 생성
           </button>
           <button
             onClick={() => setShowNewFileInput(!showNewFileInput)}
-            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
-            [+] New File
+            [+] 파일 생성
           </button>
         </div>
 
-        {/* Folder Creation Input */}
+        {/* 폴더 생성 입력 */}
         {showNewFolderInput && (
           <div className="mt-3 space-y-2">
             <input
@@ -199,15 +229,15 @@ export default function Sidebar() {
               type="text"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-blue-500 outline-none"
+              placeholder="폴더 이름"
+              className="w-full px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-blue-500 outline-none"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleCreateFolder}
                 className="flex-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
               >
-                Create
+                생성
               </button>
               <button
                 onClick={() => {
@@ -216,13 +246,13 @@ export default function Sidebar() {
                 }}
                 className="flex-1 px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs transition-colors"
               >
-                Cancel
+                취소
               </button>
             </div>
           </div>
         )}
 
-        {/* File Creation Input */}
+        {/* 파일 생성 입력 */}
         {showNewFileInput && (
           <div className="mt-3 space-y-2">
             <input
@@ -230,15 +260,15 @@ export default function Sidebar() {
               type="text"
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
-              placeholder="File name"
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-green-500 outline-none"
+              placeholder="파일 이름"
+              className="w-full px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-green-500 outline-none"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleCreateFile}
                 className="flex-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs transition-colors"
               >
-                Create
+                생성
               </button>
               <button
                 onClick={() => {
@@ -247,83 +277,57 @@ export default function Sidebar() {
                 }}
                 className="flex-1 px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs transition-colors"
               >
-                Cancel
+                취소
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Core Elements - Navigation Tree */}
+      {/* ==================== 파일 트리 ==================== */}
       <div className="flex-1 p-4 border-b border-gray-700 overflow-y-auto">
-        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">Core Elements</h3>
-
-        {/* Storyboard, Characters, World Setting */}
-        <div className="space-y-1">
-          <NavTreeItem label="Storyboard" href="/app/storyboard" />
-          <NavTreeItem label="Characters" href="/app/characters" />
-          <NavTreeItem label="World Setting" href="/app/worldsetting" />
-        </div>
-
-        {/* File Tree */}
-        {currentProject.fileTree && currentProject.fileTree.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <h4 className="text-xs font-bold text-gray-400 mb-2">Files and Folders</h4>
-            <div className="space-y-1">
-              {currentProject.fileTree.map((element) => (
-                <TreeNode
-                  key={element.id}
-                  {...element}
-                  depth={0}
-                  onRename={(id, newName) => renameElement(id, newName, null)}
-                  onDelete={(id) => deleteFileOrFolder(id, null)}
-                />
-              ))}
-            </div>
+        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">파일 구조</h3>
+        {currentProject.fileTree && currentProject.fileTree.length > 0 ? (
+          <div className="space-y-1">
+            {currentProject.fileTree.map((element) => (
+              <TreeNode
+                key={element.id}
+                {...element}
+                depth={0}
+                onRename={(id, newName) => renameElement(id, newName, null)}
+                onDelete={(id) => deleteFileOrFolder(id, null)}
+              />
+            ))}
           </div>
+        ) : (
+          <p className="text-xs text-gray-500">파일이 없습니다</p>
         )}
       </div>
 
-      {/* Special Tools */}
+      {/* ==================== 특수 도구 ==================== */}
       <div className="p-4 border-b border-gray-700">
-        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">Special Tools</h3>
+        <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">특수 도구</h3>
         <div className="space-y-2">
           {specialTools.map((tool) => (
             <Link
               key={tool.href}
               href={tool.href}
-              className="block px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-100 rounded text-sm transition-colors flex items-center gap-2"
+              className="block px-3 py-2 bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-100 rounded text-sm transition-colors flex items-center gap-2"
             >
+              <span>⚙️</span>
               <span>{tool.label}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
+      {/* ==================== 푸터 ==================== */}
       <div className="p-4 border-t border-gray-700 text-xs text-gray-400">
         <p>Creative Studio 2026</p>
-        <Link href="/" className="text-blue-400 hover:text-blue-300 mt-2 block">
-          Back to Projects
+        <Link href="/" className="text-blue-400 hover:text-blue-300 dark:text-blue-400 dark:hover:text-blue-300 mt-2 block">
+          ← 프로젝트 목록
         </Link>
       </div>
     </div>
-  );
-}
-
-function NavTreeItem({
-  label,
-  href,
-}: {
-  label: string;
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-100 hover:bg-gray-700 rounded transition-colors"
-    >
-      <span>{label}</span>
-    </Link>
   );
 }

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import SettingsModal from '@/components/SettingsModal';
-import Navigation from '@/components/Navigation';
 import { useCreative } from '@/context/CreativeContext';
 
 export default function ClientShell({
@@ -84,7 +83,6 @@ export default function ClientShell({
 
       {/* Main Content */}
       <div className="flex flex-1">
-        {currentProject && isProjectPage && <Navigation />}
         {currentProject && <Sidebar />}
         <main className={currentProject ? 'flex-1 ml-64' : 'flex-1'}>
           {children}

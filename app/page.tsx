@@ -32,14 +32,14 @@ export default function StartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Creative Studio</h1>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">Start your creative journey</p>
-        </div>
-      </div>
+<header className="w-full bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-800">
+  <div className="max-w-7xl mx-auto px-6 py-8">
+    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Creative Studio</h1>
+    <p className="text-gray-600 dark:text-gray-400">Start your creative journey</p>
+  </div>
+</header>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
