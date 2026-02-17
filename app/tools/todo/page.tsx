@@ -16,7 +16,7 @@ export default function TodoPage() {
     );
   }
 
-  const todos = currentProject.todo || [];
+  const todos = currentProject.todos || [];
 
   const handleAddTodo = () => {
     if (newTodoText.trim()) {

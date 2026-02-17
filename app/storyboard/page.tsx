@@ -119,9 +119,10 @@ export default function StoryboardPage() {
     );
   }
 
-  const sortedEvents = [...currentProject.timeline.events].sort(
-    (a, b) => a.timestamp - b.timestamp
-  );
+  const eventsAll = currentProject.timeline.events || [];
+  const sortedEvents = eventsAll
+    .filter((e): e is SceneEvent => (e as any).timestamp !== undefined)
+    .sort((a, b) => a.timestamp - b.timestamp);
 
   return (
     <div className="p-8">

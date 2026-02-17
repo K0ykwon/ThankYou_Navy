@@ -54,8 +54,17 @@ export interface SceneEvent {
 export interface Timeline {
   id: string;
   projectId: string;
-  events: SceneEvent[];
+  events: (SceneEvent | TimelineEvent)[];
   totalDuration: number;
+}
+
+export interface TimelineEvent {
+  id: string;
+  year: number;
+  title: string;
+  description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // ==================== 에피소드 ====================

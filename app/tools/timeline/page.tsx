@@ -2,13 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCreative } from '@/context/CreativeContext';
-
-interface TimelineEvent {
-  id: string;
-  year: number;
-  title: string;
-  description: string;
-}
+import type { TimelineEvent } from '@/types';
 
 export default function TimelinePage() {
   const { currentProject, updateProjectField: updateField } = useCreative();
@@ -27,7 +21,8 @@ export default function TimelinePage() {
     );
   }
 
-  const timeline = currentProject.timeline || [];
+  const timelineAll = currentProject.timeline?.events || [];
+  const timeline = timelineAll.filter((e): e is TimelineEvent => (e as any).year !== undefined);
 
   const handleAddEvent = () => {
     if (newEvent.title?.trim()) {
@@ -37,14 +32,16 @@ export default function TimelinePage() {
         title: newEvent.title,
         description: newEvent.description || '',
       };
-      const updatedTimeline = [...timeline, event].sort((a, b) => a.year - b.year);
+      const updatedTimelineEvents = [...timeline, event].sort((a, b) => a.year - b.year);
+      const updatedTimeline = { ...currentProject.timeline, events: updatedTimelineEvents };
       updateProjectField('timeline', updatedTimeline);
       setNewEvent({ year: new Date().getFullYear(), title: '', description: '' });
     }
   };
 
   const handleDeleteEvent = (id: string) => {
-    const updatedTimeline = timeline.filter((event: TimelineEvent) => event.id !== id);
+    const updatedTimelineEvents = timeline.filter((event: TimelineEvent) => event.id !== id);
+    const updatedTimeline = { ...currentProject.timeline, events: updatedTimelineEvents };
     updateProjectField('timeline', updatedTimeline);
   };
 
