@@ -182,7 +182,7 @@ export default function EditorPage() {
               disabled={runningTimeline}
               className="py-2 px-4 rounded-lg font-bold bg-yellow-600 hover:bg-yellow-700 text-white"
             >
-              {runningTimeline ? '추출·검사 중...' : '자동 씬 추출'}
+              {runningTimeline ? '추출 중...' : '자동 씬 추출'}
             </button>
           </div>
         </div>
