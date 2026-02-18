@@ -82,9 +82,9 @@ export default function ClientShell({
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 gap-0"> 
         {currentProject && <Sidebar />}
-        <main className={currentProject ? 'flex-1 ml-64' : 'flex-1'}>
+        <main className="flex-1">
           {children}
         </main>
       </div>

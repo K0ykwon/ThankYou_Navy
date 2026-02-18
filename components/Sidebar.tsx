@@ -189,7 +189,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r border-gray-700
+        className={`fixed left-0 top-18 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r border-gray-700
           ${isHovered ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
@@ -221,7 +221,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         </div>
 
         {/* ==================== 파일/폴더 관리 ==================== */}
-        <div className="p-4 border-b border-gray-700">
+        {/* <div className="p-4 border-b border-gray-700">
           <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">폴더 및 파일</h3>
           <div className="space-y-2">
             <button
@@ -236,9 +236,9 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
             >
               [+] 파일 생성
             </button>
-          </div>
+          </div> */}
 
-          {showNewFolderInput && (
+          {/* {showNewFolderInput && (
             <div className="mt-3 space-y-2">
               <input
                 autoFocus
@@ -253,9 +253,9 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
                 <button onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }} className="flex-1 px-2 py-1 bg-gray-600 rounded text-xs">취소</button>
               </div>
             </div>
-          )}
+          )} */}
 
-          {showNewFileInput && (
+          {/* {showNewFileInput && (
             <div className="mt-3 space-y-2">
               <input
                 autoFocus
@@ -271,10 +271,10 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* ==================== 파일 트리 ==================== */}
-        <div className="flex-1 p-4 border-b border-gray-700 overflow-y-auto">
+        {/* <div className="flex-1 p-4 border-b border-gray-700 overflow-y-auto">
           <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">파일 구조</h3>
           {currentProject.fileTree && currentProject.fileTree.length > 0 ? (
             <div className="space-y-1">
@@ -291,7 +291,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
           ) : (
             <p className="text-xs text-gray-500">파일이 없습니다</p>
           )}
-        </div>
+        </div> */}
 
         {/* ==================== 특수 도구 ==================== */}
         <div className="p-4 border-b border-gray-700">
@@ -313,13 +313,13 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         {/* ==================== 푸터 ==================== */}
         <div className="p-4 border-t border-gray-700 text-xs text-gray-400 mt-auto">
           <p>Creative Studio 2026</p>
-          <Link 
+          {/* <Link 
             href="/" 
             onClick={() => setIsHovered(false)} // 클릭 시 사이드바 닫기
             className="text-blue-400 hover:text-blue-300 mt-2 block"
           >
             ← 프로젝트 목록
-          </Link>
+          </Link> */}
         </div>
       </aside>
 

@@ -10,8 +10,7 @@ interface MindmapNode {
 }
 
 export default function MindmapPage() {
-  const { currentProject, updateProjectField: updateField } = useCreative();
-  const updateProjectField = updateField;
+  const { currentProject, updateProjectField } = useCreative();
   const [newNodeText, setNewNodeText] = useState('');
 
   if (!currentProject) {
@@ -22,6 +21,7 @@ export default function MindmapPage() {
     );
   }
 
+  // 필드명을 mindMap으로 통일하고 기본 구조 보장
   const mindmap = (currentProject.mindMap || {
     id: '1',
     text: '프로젝트',
@@ -35,11 +35,14 @@ export default function MindmapPage() {
         text: newNodeText,
         children: [],
       };
+      
       const updatedMindmap = {
         ...mindmap,
         children: [...(mindmap.children || []), newNode],
       };
-      updateProjectField('mindmap', updatedMindmap);
+      
+      // Context의 필드명과 일치시킴
+      updateProjectField('mindMap', updatedMindmap);
       setNewNodeText('');
     }
   };
@@ -49,13 +52,13 @@ export default function MindmapPage() {
       const deleteNodeRecursive = (n: MindmapNode): MindmapNode => {
         return {
           ...n,
-          children: n.children
+          children: (n.children || [])
             .filter((child) => child.id !== id)
             .map((child) => deleteNodeRecursive(child)),
         };
       };
       const updatedMindmap = deleteNodeRecursive(mindmap);
-      updateProjectField('mindmap', updatedMindmap);
+      updateProjectField('mindMap', updatedMindmap);
     };
 
     return (
@@ -79,7 +82,8 @@ export default function MindmapPage() {
             )}
           </div>
         </div>
-        {node.children && node.children.length > 0 && (
+        {/* Optional Chaining 사용 */}
+        {node.children?.length > 0 && (
           <div className="ml-8 mt-4 border-l-2 border-blue-300 dark:border-blue-700 pl-4">
             {node.children.map((child) => (
               <MindmapNodeComponent key={child.id} node={child} level={level + 1} />
@@ -96,7 +100,6 @@ export default function MindmapPage() {
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">🧠 Mindmap</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">스토리의 개념과 아이디어를 정리하세요.</p>
 
-        {/* 새로운 노드 추가 */}
         <div className="mb-8 flex gap-3">
           <input
             type="text"
@@ -114,10 +117,10 @@ export default function MindmapPage() {
           </button>
         </div>
 
-        {/* Mindmap 표시 */}
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700">
           <MindmapNodeComponent node={mindmap} />
-          {mindmap.children.length === 0 && (
+          {/* 에러 발생 지점 수정: mindmap.children?.length */}
+          {(!mindmap.children || mindmap.children.length === 0) && (
             <p className="text-gray-500 dark:text-gray-400 text-center py-4">아직 아이디어가 없습니다.</p>
           )}
         </div>

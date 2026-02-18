@@ -29,9 +29,9 @@ export default function MainDashboard() {
           </h1>
           <p className="text-gray-600 dark:text-gray-400">{currentProject.description}</p>
         </div>
-        <Link href="/" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded transition-colors">
+        {/* <Link href="/" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded transition-colors">
           ← 프로젝트 목록
-        </Link>
+        </Link> */}
       </div>
 
       {/* Project Info Cards */}
