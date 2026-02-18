@@ -2,11 +2,12 @@
 
 import { useCreative } from '@/context/CreativeContext';
 import { useState, useEffect } from 'react';
-import { extractSetting } from '@/lib/somniApi';
+import { extractSetting, extractTimeline, checkConsistency } from '@/lib/somniApi';
 import Link from 'next/link';
+import { supabase } from '@/lib/db';
 
 export default function EditorPage() {
-  const { currentProject, updateProject } = useCreative();
+  const { currentProject, updateProject, addSceneEvent } = useCreative();
   const [content, setContent] = useState('');
   const [isSaved, setIsSaved] = useState(true);
   const [wordCount, setWordCount] = useState(0);
@@ -29,6 +30,66 @@ export default function EditorPage() {
       updateProject(currentProject.id, { worldSetting: content });
     }
     setIsSaved(true);
+  };
+
+  const [runningTimeline, setRunningTimeline] = useState(false);
+  const [lastReport, setLastReport] = useState<any>(null);
+
+  const handleAutoTimeline = async () => {
+    if (!currentProject) return;
+    if (!content.trim()) return alert('원문을 입력하세요.');
+    setRunningTimeline(true);
+    try {
+      const res = await extractTimeline(content.trim(), currentProject.settingData || null);
+      const timeline = res?.timeline || [];
+      if (!Array.isArray(timeline) || timeline.length === 0) {
+        alert('추출된 씬이 없습니다.');
+      } else {
+        for (let i = 0; i < timeline.length; i++) {
+          const it = timeline[i];
+          const title = it.summary || it.chapter_or_chunk || `씬 ${i + 1}`;
+          const description = it.summary || it.description || '';
+          const timestamp = Math.round(it.earliest_minutes ?? it.timestamp_minutes ?? 0);
+          const charNames = Array.isArray(it.characters) ? it.characters : [];
+          const characterIds: string[] = (currentProject.characters || []).filter(c => charNames.includes(c.name)).map(c => c.id);
+
+          const event = {
+            id: Date.now().toString() + '-' + i + '-' + Math.random().toString(36).slice(2,6),
+            title: String(title),
+            description: String(description || ''),
+            timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+            characterIds,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          try {
+            await addSceneEvent(event as any);
+          } catch (err) {
+            console.warn('addSceneEvent failed', err);
+          }
+        }
+        alert('타임라인 추출 완료 — 씬이 스토리보드에 추가되었습니다.');
+      }
+
+      try {
+        const cons = await checkConsistency(content.trim(), currentProject.settingData || null);
+        setLastReport(cons);
+        try {
+          await supabase.from('projects').update({ consistency_report: cons, setting_data: currentProject.settingData }).eq('id', currentProject.id);
+        } catch (err) {
+          console.warn('Supabase projects.update consistency_report failed', err);
+        }
+        alert('일관성 검사 완료 — 리포트 저장 완료.');
+      } catch (err) {
+        console.warn('checkConsistency failed', err);
+      }
+    } catch (err: any) {
+      console.error('extractTimeline failed', err);
+      alert('타임라인 추출 중 오류가 발생했습니다: ' + (err?.message || err));
+    } finally {
+      setRunningTimeline(false);
+    }
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -114,6 +175,14 @@ export default function EditorPage() {
               className="py-2 px-4 rounded-lg font-bold bg-purple-600 hover:bg-purple-700 text-white"
             >
               {running ? '추출 중...' : '캐릭터 추출'}
+            </button>
+
+            <button
+              onClick={handleAutoTimeline}
+              disabled={runningTimeline}
+              className="py-2 px-4 rounded-lg font-bold bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              {runningTimeline ? '추출·검사 중...' : '자동 씬 추출 · 일관성 검사'}
             </button>
           </div>
         </div>
