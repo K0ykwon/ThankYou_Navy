@@ -220,6 +220,15 @@ export default function EditorPage() {
         </div>
       </div>
 
+      {lastReport && (
+        <div className="p-6 max-w-6xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">일관성 검사 결과</h3>
+            <pre className="text-sm text-gray-700 dark:text-gray-300 max-h-64 overflow-auto whitespace-pre-wrap">{JSON.stringify(lastReport, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
       {/* Unsaved Alert */}
       {!isSaved && (
         <div className="bg-yellow-50 dark:bg-yellow-900 border-t-2 border-yellow-400 dark:border-yellow-700 p-4 text-yellow-800 dark:text-yellow-200">
