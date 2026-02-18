@@ -4,6 +4,8 @@ import { useCreative } from '@/context/CreativeContext';
 import { SceneEvent } from '@/types';
 import { useState } from 'react';
 import Link from 'next/link';
+import { extractTimeline, checkConsistency } from '@/lib/somniApi';
+import { supabase } from '@/lib/db';
 
 export default function StoryboardPage() {
   const {
@@ -95,6 +97,73 @@ export default function StoryboardPage() {
     });
   };
 
+  const [runningAuto, setRunningAuto] = useState(false);
+  const [lastReport, setLastReport] = useState<any>(null);
+
+  const handleAutoExtract = async () => {
+    if (!currentProject) return;
+    const raw = currentProject.worldSetting || '';
+    if (!raw.trim()) return alert('프로젝트의 텍스트(World Setting)가 비어있습니다. 먼저 내용을 입력하세요.');
+    setRunningAuto(true);
+    try {
+      // timeline 추출
+      const res = await extractTimeline(raw, currentProject.settingData || null);
+      const timeline = res?.timeline || res?.timeline || [];
+      if (!Array.isArray(timeline) || timeline.length === 0) {
+        alert('추출된 씬이 없습니다.');
+      } else {
+        // 각 타임라인 항목을 SceneEvent로 변환하여 추가
+        for (let i = 0; i < timeline.length; i++) {
+          const it = timeline[i];
+          const title = it.summary || it.chapter_or_chunk || `씬 ${i + 1}`;
+          const description = it.summary || it.description || '';
+          const timestamp = Math.round(it.earliest_minutes ?? it.timestamp_minutes ?? 0);
+          // map character names -> local character ids
+          const charNames = Array.isArray(it.characters) ? it.characters : [];
+          const characterIds: string[] = (currentProject.characters || []).filter(c => charNames.includes(c.name)).map(c => c.id);
+
+          const event: SceneEvent = {
+            id: Date.now().toString() + '-' + i + '-' + Math.random().toString(36).slice(2,6),
+            title: String(title),
+            description: String(description || ''),
+            timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+            characterIds,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          // addSceneEvent will persist and update local timeline
+          try {
+            await addSceneEvent(event);
+          } catch (err) {
+            console.warn('Failed to add extracted scene event', err);
+          }
+        }
+        alert('자동 씬 추출이 완료되어 스토리보드에 추가되었습니다.');
+      }
+
+      // 일관성 검사 실행 및 저장
+      try {
+        const cons = await checkConsistency(raw, currentProject.settingData || null);
+        setLastReport(cons);
+        // 저장 시도: projects.consistency_report 컬럼에 저장
+        try {
+          await supabase.from('projects').update({ consistency_report: cons, setting_data: currentProject.settingData }).eq('id', currentProject.id);
+        } catch (err) {
+          console.warn('Supabase projects.update consistency_report failed', err);
+        }
+        alert('일관성 검사 완료 — 리포트가 저장되었습니다.');
+      } catch (err) {
+        console.warn('Consistency check failed', err);
+      }
+    } catch (err: any) {
+      console.error('Auto extract/timeline failed', err);
+      alert('자동 추출 중 오류가 발생했습니다: ' + (err?.message || err));
+    } finally {
+      setRunningAuto(false);
+    }
+  };
+
   const toggleCharacter = (characterId: string) => {
     setFormData({
       ...formData,
@@ -135,12 +204,21 @@ export default function StoryboardPage() {
             </h1>
             <p className="text-gray-600">{currentProject.title}</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            + 새 씬 추가
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            >
+              + 새 씬 추가
+            </button>
+            <button
+              onClick={handleAutoExtract}
+              disabled={runningAuto}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            >
+              {runningAuto ? '추출 중...' : '자동 씬 추출 · 일관성 검사'}
+            </button>
+          </div>
         </div>
 
         {/* 폼 */}
@@ -248,6 +326,12 @@ export default function StoryboardPage() {
         )}
 
         {/* 타임라인 */}
+        {lastReport && (
+          <div className="mb-6 p-4 bg-white rounded-lg border border-yellow-200">
+            <h3 className="font-bold text-lg text-gray-800 mb-2">최근 일관성 검사 결과</h3>
+            <pre className="text-sm text-gray-700 max-h-48 overflow-auto whitespace-pre-wrap">{JSON.stringify(lastReport, null, 2)}</pre>
+          </div>
+        )}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             타임라인 ({sortedEvents.length}개 씬)

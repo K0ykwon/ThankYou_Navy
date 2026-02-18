@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import {
   CreativeProject,
   Character,
+  CharacterItem,
+  SettingData,
   SceneEvent,
   Timeline,
   UserSettings,
@@ -61,6 +63,9 @@ interface CreativeContextType {
 
   // 프로젝트 필드 범용 업데이트
   updateProjectField: (fieldName: string, value: any) => void;
+
+  // sync setting_data.characters -> characters table and reload
+  syncSettingDataToDB: (projectId: string, settingData?: SettingData | null) => Promise<void>;
 
   // 설정 관리
   userSettings: UserSettings | null;
@@ -148,7 +153,21 @@ export function CreativeProvider({
               genre: p.genre || undefined,
               author: p.author || undefined,
               fileTree: p.file_tree || [],
-              characters: p.characters || [],
+              // prefer explicit characters table, otherwise derive from setting_data.characters
+              characters: p.characters && Array.isArray(p.characters) && p.characters.length > 0
+                ? p.characters
+                : (p.setting_data?.characters || p.settingData?.characters || []).map((c: any, idx: number) => ({
+                    id: (c.name || ('char-' + idx)) + '-' + idx,
+                    name: c.name || '',
+                    role: c.role || '',
+                    description: c.description || null,
+                    appearance: Array.isArray(c.traits) ? c.traits.join(', ') : (c.traits || '').toString(),
+                    personality: '',
+                    backstory: '',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  })),
+              settingData: p.setting_data || p.settingData || null,
               episodes: p.episodes || [],
               timeline: p.timeline || { id: p.id, projectId: p.id, events: [], totalDuration: 0 },
               todos: p.todos || [],
@@ -207,6 +226,7 @@ export function CreativeProvider({
           author,
           fileTree: [],
           characters: [],
+          settingData: null,
           episodes: [],
           timeline: {
             id,
@@ -268,6 +288,7 @@ export function CreativeProvider({
           author,
           fileTree: [],
           characters: [],
+          settingData: null,
           episodes: [],
           timeline: {
             id,
@@ -309,6 +330,7 @@ export function CreativeProvider({
           if (updates.author !== undefined) updateData.author = updates.author;
           if (updates.fileTree !== undefined) updateData.file_tree = updates.fileTree;
           if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
+          if ((updates as any).settingData !== undefined) updateData.setting_data = (updates as any).settingData;
 
           const { error } = await supabase
             .from('projects')
@@ -413,72 +435,86 @@ export function CreativeProvider({
       try {
         if (!currentProject) return;
 
-        // Supabase에 저장
-        const { error } = await supabase
-          .from('characters')
-          .insert([
-            {
-              id: character.id,
-              project_id: currentProject.id,
+        // Update local state and project's setting_data (no characters table)
+          setCurrentProject((prev) => {
+            if (!prev) return prev;
+            const updatedChars = [...prev.characters, character];
+            const charItem: CharacterItem = {
               name: character.name,
-              age: character.age || null,
-              role: character.role,
-              description: character.description,
-              appearance: character.appearance,
-              personality: character.personality,
-              backstory: character.backstory,
-              goals: character.goals || null,
-              image_url: character.imageUrl || null,
-              created_at: character.createdAt.toISOString(),
-              updated_at: character.updatedAt.toISOString(),
-            },
-          ]);
+              aliases: [],
+              description: character.description || null,
+              traits: character.appearance ? character.appearance.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean) : [],
+              relationships: {},
+              role: character.role || null,
+            };
+            const newSetting: SettingData = {
+              characters: [ ...(prev.settingData?.characters || []), charItem ],
+              relations: prev.settingData?.relations || [],
+              name_mapping: { ...(prev.settingData?.name_mapping || {}), [character.name]: [] },
+              world: prev.settingData?.world || [],
+              plot_threads: prev.settingData?.plot_threads || [],
+            };
 
-        if (error) {
-          console.error('Failed to add character:', error.message);
-        }
+            const updated = {
+              ...prev,
+              characters: updatedChars,
+              settingData: newSetting,
+              updatedAt: new Date(),
+            };
 
-        // 로컬 상태 업데이트
-        setCurrentProject((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            characters: [...prev.characters, character],
-            updatedAt: new Date(),
-          };
-        });
+            // persist setting_data to projects table
+            updateProject(prev.id, { settingData: newSetting });
+            return updated;
+          });
       } catch (err) {
         console.error('Error adding character:', err);
       }
     },
-    [currentProject]
+    [currentProject, updateProject]
   );
 
   const updateCharacter = useCallback(async (id: string, updates: Partial<Character>) => {
     try {
-      // Supabase에 업데이트
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('characters')
-        .update(updateData)
-        .eq('id', id);
-
-      if (error) {
-        console.error('Failed to update character:', error.message);
-      }
-
-      // 로컬 상태 업데이트
+      // Update character within local characters and within settingData (no characters table)
       setCurrentProject((prev) => {
         if (!prev) return prev;
+
+        // update local characters array
+        const updatedLocalChars = prev.characters.map((c) =>
+          c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
+        );
+
+        // try to find matching setting_data character by name parsed from id or by name match
+        const nameCandidate = id.split('-')[0];
+        const settingChars = (prev.settingData?.characters || []).map((sc, idx) => {
+          if (sc.name === nameCandidate || sc.name === (updates.name || sc.name)) {
+            // merge fields
+            return {
+              ...sc,
+              name: updates.name ?? sc.name,
+              description: updates.description ?? sc.description,
+              role: (updates.role ?? sc.role) ?? null,
+              traits: updates.appearance ? String(updates.appearance).split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean) : sc.traits || [],
+            };
+          }
+          return sc;
+        });
+
+        const newSetting: SettingData = {
+          characters: settingChars,
+          relations: prev.settingData?.relations || [],
+          name_mapping: prev.settingData?.name_mapping || {},
+          world: prev.settingData?.world || [],
+          plot_threads: prev.settingData?.plot_threads || [],
+        };
+
+        // persist setting_data
+        updateProject(prev.id, { settingData: newSetting });
+
         return {
           ...prev,
-          characters: prev.characters.map((c) =>
-            c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
-          ),
+          characters: updatedLocalChars,
+          settingData: newSetting,
           updatedAt: new Date(),
         };
       });
@@ -489,22 +525,27 @@ export function CreativeProvider({
 
   const deleteCharacter = useCallback(async (id: string) => {
     try {
-      // Supabase에서 삭제
-      const { error } = await supabase
-        .from('characters')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Failed to delete character:', error.message);
-      }
-
-      // 로컬 상태 업데이트
+      // Remove from local characters and from setting_data.characters; persist only to projects.setting_data
       setCurrentProject((prev) => {
         if (!prev) return prev;
+        const filteredLocal = prev.characters.filter((c) => c.id !== id);
+        const nameCandidate = id.split('-')[0];
+        const filteredSetting = (prev.settingData?.characters || []).filter((sc) => sc.name !== nameCandidate);
+
+        const newSetting: SettingData = {
+          characters: filteredSetting,
+          relations: prev.settingData?.relations || [],
+          name_mapping: prev.settingData?.name_mapping || {},
+          world: prev.settingData?.world || [],
+          plot_threads: prev.settingData?.plot_threads || [],
+        };
+
+        updateProject(prev.id, { settingData: newSetting });
+
         return {
           ...prev,
-          characters: prev.characters.filter((c) => c.id !== id),
+          characters: filteredLocal,
+          settingData: newSetting,
           updatedAt: new Date(),
         };
       });
@@ -1132,6 +1173,34 @@ export function CreativeProvider({
   }, []);
 
   // ==================== 설정 관리 ====================
+  const syncSettingDataToDB = useCallback(async (projectId: string, settingData?: SettingData | null) => {
+    try {
+      if (!supabase) {
+        console.warn('⚠️ Supabase가 설정되지 않음');
+        return;
+      }
+
+      const dataToSync = settingData || currentProject?.settingData;
+      if (!dataToSync) {
+        console.warn('⚠️ 동기화할 settingData가 없습니다');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ setting_data: dataToSync, updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+      if (error) {
+        console.error('Failed to sync setting_data to DB:', error.message);
+      } else {
+        console.log('✅ settingData synced to DB');
+      }
+    } catch (err) {
+      console.error('Error syncing setting_data:', err);
+    }
+  }, [currentProject]);
+
   const updateUserSettings = useCallback((updates: Partial<UserSettings>) => {
     setUserSettingsState((prev) => {
       if (!prev) return prev;
@@ -1223,6 +1292,7 @@ export function CreativeProvider({
     updateMindMapNode,
     deleteMindMapNode,
     updateProjectField,
+    syncSettingDataToDB,
     userSettings,
     updateUserSettings,
     setFontSize,

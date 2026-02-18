@@ -1,7 +1,7 @@
 'use client';
 
 import { useCreative } from '@/context/CreativeContext';
-import { Character } from '@/types';
+import { Character, CharacterItem } from '@/types';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -116,6 +116,18 @@ export default function CharactersPage() {
       </div>
     );
   }
+
+  const displayChars = currentProject.settingData?.characters
+    ? currentProject.settingData.characters.map((c: CharacterItem, idx: number) => ({
+        id: `${c.name}-${idx}`,
+        name: c.name,
+        role: c.role || '',
+        description: c.description || '',
+        appearance: (c.traits || []).join(', '),
+        personality: '',
+        backstory: '',
+      }))
+    : currentProject.characters;
 
   return (
     <div className="p-8">
@@ -263,17 +275,17 @@ export default function CharactersPage() {
         {/* 캐릭터 목록 */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            캐릭터 ({currentProject.characters.length})
-          </h2>
+              캐릭터 ({displayChars.length})
+            </h2>
 
-          {currentProject.characters.length === 0 ? (
+          {displayChars.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
               <p className="text-gray-600 text-lg">아직 캐릭터가 없습니다.</p>
               <p className="text-gray-500">캐릭터를 추가해서 시작해보세요!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {currentProject.characters.map((character) => (
+              {displayChars.map((character) => (
                 <div
                   key={character.id}
                   className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500"
@@ -329,20 +341,23 @@ export default function CharactersPage() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-6">
-                    <button
-                      onClick={() => handleEdit(character)}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() => deleteCharacter(character.id)}
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors"
-                    >
-                      삭제
-                    </button>
-                  </div>
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => handleEdit(character as Character)}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
+                          deleteCharacter(character.id);
+                        }}
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                      >
+                        삭제
+                      </button>
+                    </div>
                 </div>
               ))}
             </div>

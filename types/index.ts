@@ -39,6 +39,32 @@ export interface Character {
   updatedAt: Date;
 }
 
+// --- Backend/Extraction unified character item (setting_data.characters)
+export interface CharacterItem {
+  name: string;
+  aliases: string[];
+  description?: string | null;
+  traits: string[];
+  relationships: Record<string, string>;
+  role?: string | null;
+}
+
+export interface RelationItem {
+  from: string;
+  to: string;
+  label: string;
+  description?: string | null;
+  chapter_or_chunk?: string | null;
+}
+
+export interface SettingData {
+  characters: CharacterItem[];
+  relations: RelationItem[];
+  name_mapping: Record<string, string[]>;
+  world: any[];
+  plot_threads: any[];
+}
+
 // ==================== 씬/장면 ====================
 export interface SceneEvent {
   id: string;
@@ -97,6 +123,8 @@ export interface CreativeProject {
   author?: string;
   fileTree: ProjectElement[];
   characters: Character[];
+  // optional unified setting data produced by backend/extractors
+  settingData?: SettingData | null;
   episodes: Episode[];
   timeline: Timeline;
   negativeArc?: NegativeArcPoint[];

@@ -2,6 +2,7 @@
 
 import { useCreative } from '@/context/CreativeContext';
 import { useState, useEffect } from 'react';
+import { extractSetting } from '@/lib/somniApi';
 import Link from 'next/link';
 
 export default function EditorPage() {
@@ -10,6 +11,7 @@ export default function EditorPage() {
   const [isSaved, setIsSaved] = useState(true);
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
+  const [running, setRunning] = useState(false);
 
   useEffect(() => {
     if (currentProject) {
@@ -60,16 +62,60 @@ export default function EditorPage() {
             </h1>
             <p className="text-gray-600 dark:text-gray-400">{currentProject.title}</p>
           </div>
-          <button
-            onClick={handleSave}
-            className={`py-2 px-6 rounded-lg font-bold transition-colors ${
-              isSaved
-                ? 'bg-green-600 dark:bg-green-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
-            }`}
-          >
-            {isSaved ? '✓ Saved' : 'Save'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleSave}
+              className={`py-2 px-6 rounded-lg font-bold transition-colors ${
+                isSaved
+                  ? 'bg-green-600 dark:bg-green-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
+              }`}
+            >
+              {isSaved ? '✓ Saved' : 'Save'}
+            </button>
+
+            <button
+              onClick={async () => {
+                if (!content.trim() || !currentProject) return alert('원문을 입력하고 프로젝트를 선택하세요');
+                setRunning(true);
+                try {
+                  const existing_settings = currentProject.settingData || {
+                    characters: (currentProject.characters || []).map((c: any) => ({
+                      name: c.name,
+                      aliases: [],
+                      description: c.description || null,
+                      traits: c.appearance ? c.appearance.split(/[,;]\s*/) : [],
+                      relationships: {},
+                      role: c.role || null,
+                    })),
+                    relations: [],
+                    name_mapping: {},
+                  };
+
+                  const res = await extractSetting(content.trim(), existing_settings);
+                  const setting = res?.setting_data;
+                  if (!setting) {
+                    alert('설정 데이터가 반환되지 않았습니다.');
+                  } else {
+                    try {
+                      await updateProject(currentProject.id, { settingData: setting });
+                    } catch (err) {
+                      console.warn('projects.update setting_data failed', err);
+                    }
+                    alert('설정 추출 완료 — 프로젝트에 저장했습니다.');
+                  }
+                } catch (e: any) {
+                  alert('추출 실패: ' + (e.message || e));
+                } finally {
+                  setRunning(false);
+                }
+              }}
+              disabled={running}
+              className="py-2 px-4 rounded-lg font-bold bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {running ? '추출 중...' : '캐릭터 추출'}
+            </button>
+          </div>
         </div>
       </div>
 
