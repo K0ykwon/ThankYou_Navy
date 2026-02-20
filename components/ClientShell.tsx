@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import SettingsModal from '@/components/SettingsModal';
+import FloatingChat from '@/components/FloatingChat';
 import { useCreative } from '@/context/CreativeContext';
 
 export default function ClientShell({
@@ -91,6 +92,9 @@ export default function ClientShell({
 
       {/* Settings Modal */}
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* Floating AI Chat */}
+      <FloatingChat />
     </div>
   );
 }

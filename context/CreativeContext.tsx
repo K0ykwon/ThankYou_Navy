@@ -719,22 +719,23 @@ export function CreativeProvider({
       if (!currentProject) return;
 
       // Supabase에 저장
-      const { error } = await supabase
-        .from('episodes')
-        .insert([
-          {
-            id: episode.id,
-            project_id: currentProject.id,
-            title: episode.title,
-            content: episode.content || null,
-            summary: episode.summary || null,
-            chapter_number: episode.chapterNumber || null,
-            scenes: episode.scenes || [],
-            created_at: episode.createdAt.toISOString(),
-            updated_at: episode.updatedAt.toISOString(),
-          },
-        ]);
-
+      const insertData: any = {
+        id: episode.id,
+        project_id: currentProject.id,
+        title: episode.title,
+        content: episode.content || null,
+        summary: episode.summary || null,
+        chapter_number: episode.chapterNumber || null,
+        scenes: episode.scenes || [],
+        created_at: episode.createdAt.toISOString(),
+        updated_at: episode.updatedAt.toISOString(),
+      };
+      let { error } = await supabase.from('episodes').insert([insertData]);
+      // content 컬럼이 없으면 content 제외 후 재시도
+      if (error && error.message?.includes('content')) {
+        const { content: _c, ...withoutContent } = insertData;
+        ({ error } = await supabase.from('episodes').insert([withoutContent]));
+      }
       if (error) {
         console.error('Failed to add episode:', error.message);
       }
@@ -763,11 +764,12 @@ export function CreativeProvider({
       if (updates.chapterNumber !== undefined) updateData.chapter_number = updates.chapterNumber;
       if (updates.scenes !== undefined) updateData.scenes = updates.scenes;
 
-      const { error } = await supabase
-        .from('episodes')
-        .update(updateData)
-        .eq('id', id);
-
+      let { error } = await supabase.from('episodes').update(updateData).eq('id', id);
+      // content 컬럼이 없으면 content 제외 후 재시도
+      if (error && error.message?.includes('content')) {
+        const { content: _c, ...withoutContent } = updateData;
+        ({ error } = await supabase.from('episodes').update(withoutContent).eq('id', id));
+      }
       if (error) {
         console.error('Failed to update episode:', error.message);
       }
