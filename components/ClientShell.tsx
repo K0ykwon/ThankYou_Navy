@@ -85,10 +85,10 @@ export default function ClientShell({
               </button>
             )}
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <span className="text-3xl">🪵</span>
+              <span className="text-3xl">📜</span>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#F0DFC5' }}>창작 스튜디오</h1>
-                <p className="text-xs" style={{ color: '#C4935A' }}>창작 보조 도구</p>
+                <h1 className="text-2xl font-bold" style={{ color: '#F0DFC5' }}>Scripto</h1>
+                <p className="text-xs" style={{ color: '#C4935A' }}>ScriptoImagination turns words into worlds.</p>
               </div>
             </Link>
           </div>
