@@ -27,6 +27,19 @@ export default function StoryboardPage() {
     updatedAt: new Date(),
   });
 
+  // ↓ 이 hooks들이 early return 이후에 있었던 것들 - Rules of Hooks 위반 수정
+  const [runningAuto, setRunningAuto] = useState(false);
+  const [lastReport, setLastReport] = useState<any>(null);
+  const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
+  const [generatingSceneId, setGeneratingSceneId] = useState<string | null>(null);
+  const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (currentProject?.consistencyReport) {
+      setLastReport(currentProject.consistencyReport);
+    }
+  }, [currentProject?.id]);
+
   if (!currentProject) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
@@ -98,14 +111,6 @@ export default function StoryboardPage() {
     });
   };
 
-  const [runningAuto, setRunningAuto] = useState(false);
-  const [lastReport, setLastReport] = useState<any>(null);
-  const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
-
-  // 씬 삽화 생성
-  const [generatingSceneId, setGeneratingSceneId] = useState<string | null>(null);
-  const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
-
   const handleGenerateSceneIllustration = async (event: SceneEvent) => {
     const eventChars = (currentProject?.characters || []).filter(c => event.characterIds.includes(c.id));
     const charDesc = eventChars.map(c => `${c.name}${c.appearance ? `(${c.appearance})` : ''}`).join(', ');
@@ -129,13 +134,6 @@ export default function StoryboardPage() {
       setGeneratingSceneId(null);
     }
   };
-
-  // 프로젝트 로드 시 저장된 일관성 리포트 복원
-  useEffect(() => {
-    if (currentProject?.consistencyReport) {
-      setLastReport(currentProject.consistencyReport);
-    }
-  }, [currentProject?.id]);
 
   const handleAutoExtract = async () => {
     if (!currentProject) return;
@@ -213,7 +211,7 @@ export default function StoryboardPage() {
   const labelClass = 'block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm';
 
   return (
-    <div className="p-8">
+    <div className="p-8 dark:bg-gray-900 min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="mb-8 flex justify-between items-start">
