@@ -2,10 +2,10 @@
 
 import { useCreative } from '@/context/CreativeContext';
 import { SceneEvent } from '@/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { extractTimeline, checkConsistency } from '@/lib/somniApi';
-import { supabase } from '@/lib/db';
+import ConsistencyReport from '@/components/ConsistencyReport';
 
 export default function StoryboardPage() {
   const {
@@ -13,6 +13,7 @@ export default function StoryboardPage() {
     addSceneEvent,
     updateSceneEvent,
     deleteSceneEvent,
+    updateProject,
   } = useCreative();
 
   const [showForm, setShowForm] = useState(false);
@@ -100,6 +101,13 @@ export default function StoryboardPage() {
   const [runningAuto, setRunningAuto] = useState(false);
   const [lastReport, setLastReport] = useState<any>(null);
 
+  // 프로젝트 로드 시 저장된 일관성 리포트 복원
+  useEffect(() => {
+    if (currentProject?.consistencyReport) {
+      setLastReport(currentProject.consistencyReport);
+    }
+  }, [currentProject?.id]);
+
   const handleAutoExtract = async () => {
     if (!currentProject) return;
     const raw = currentProject.worldSetting || '';
@@ -141,11 +149,8 @@ export default function StoryboardPage() {
       try {
         const cons = await checkConsistency(raw, currentProject.settingData || null);
         setLastReport(cons);
-        try {
-          await supabase.from('projects').update({ consistency_report: cons, setting_data: currentProject.settingData }).eq('id', currentProject.id);
-        } catch (err) {
-          console.warn('Supabase projects.update consistency_report failed', err);
-        }
+        // 컨텍스트 + DB에 동시 저장
+        await updateProject(currentProject.id, { consistencyReport: cons });
         alert('일관성 검사 완료 — 리포트가 저장되었습니다.');
       } catch (err) {
         console.warn('Consistency check failed', err);
@@ -286,53 +291,20 @@ export default function StoryboardPage() {
           </div>
         )}
 
-        {/* 일관성 검사 리포트 */}
+        {/* 일관성 검사 결과 */}
         {lastReport && (
           <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900 dark:text-white">일관성 검사 결과</h3>
-              <span className={`text-lg font-bold ${lastReport.score >= 0.8 ? 'text-green-500' : lastReport.score >= 0.5 ? 'text-yellow-500' : 'text-red-500'}`}>
-                {Math.round((lastReport.score ?? 0) * 100)}점
-              </span>
+              <h3 className="font-bold text-gray-900 dark:text-white">🔍 일관성 검사 결과</h3>
+              <button
+                onClick={() => setLastReport(null)}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                닫기
+              </button>
             </div>
-            <div className="p-5 space-y-4">
-              {lastReport.report?.character_checks?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">캐릭터 일관성</p>
-                  <div className="flex flex-wrap gap-2">
-                    {lastReport.report.character_checks.map((c: any) => (
-                      <div key={c.name} className={`px-3 py-1.5 rounded-lg text-sm border ${c.passed ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'}`}>
-                        <span className="font-medium">{c.name}</span>
-                        <span className="ml-1">{c.passed ? '✓' : '✗'}</span>
-                        {c.issues?.length > 0 && (
-                          <ul className="mt-1 text-xs list-disc list-inside">
-                            {c.issues.map((issue: string, i: number) => <li key={i}>{issue}</li>)}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {lastReport.report?.world_checks && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">세계관 일관성</p>
-                  <div className={`px-3 py-2 rounded-lg text-sm border ${lastReport.report.world_checks.passed ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'}`}>
-                    {lastReport.report.world_checks.passed ? '✓ 이상 없음' : '✗ 문제 있음'}
-                    {lastReport.report.world_checks.issues?.map((issue: string, i: number) => (
-                      <p key={i} className="text-xs mt-0.5">• {issue}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {lastReport.recommendations?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">권고사항</p>
-                  <ul className="list-disc list-inside text-sm text-yellow-700 dark:text-yellow-300 space-y-0.5">
-                    {lastReport.recommendations.map((r: string, i: number) => <li key={i}>{r}</li>)}
-                  </ul>
-                </div>
-              )}
+            <div className="p-5">
+              <ConsistencyReport report={lastReport} />
             </div>
           </div>
         )}

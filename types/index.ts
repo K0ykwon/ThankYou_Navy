@@ -130,6 +130,7 @@ export interface CreativeProject {
   timeline: Timeline;
   negativeArc?: NegativeArcPoint[];
   worldSetting?: string;
+  consistencyReport?: any;
   mindMap?: MindMapNode[];
   todos?: TodoItem[];
   createdAt: Date;

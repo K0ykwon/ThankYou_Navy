@@ -173,6 +173,7 @@ export function CreativeProvider({
               todos: p.todos || [],
               mindMap: p.mindmap || [],
               worldSetting: p.world_setting || undefined,
+              consistencyReport: p.consistency_report || null,
               createdAt: new Date(p.created_at),
               updatedAt: new Date(p.updated_at),
             }));
@@ -332,6 +333,7 @@ export function CreativeProvider({
           if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
           if ((updates as any).settingData !== undefined) updateData.setting_data = (updates as any).settingData;
           if (updates.worldSetting !== undefined) updateData.world_setting = updates.worldSetting;
+          if (updates.consistencyReport !== undefined) updateData.consistency_report = updates.consistencyReport;
 
           const { error } = await supabase
             .from('projects')
