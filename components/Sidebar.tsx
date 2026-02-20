@@ -168,11 +168,18 @@ function TreeNode({
   );
 }
 
-export default function Sidebar({ children }: { children?: React.ReactNode }) {
+interface SidebarProps {
+  children?: React.ReactNode;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ children, mobileOpen = false, onMobileClose }: SidebarProps) {
   const { currentProject } = useCreative();
   const pathname = usePathname();
 
   const [isHovered, setIsHovered] = useState(false);
+  const isVisible = isHovered || mobileOpen;
 
   if (!currentProject) {
     return <>{children}</>;
@@ -194,9 +201,18 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Mouse trigger zone */}
+      {/* 모바일 백드롭 오버레이 */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ backgroundColor: 'rgba(21,10,3,0.6)' }}
+          onClick={onMobileClose}
+        />
+      )}
+
+      {/* 데스크톱 전용 마우스 트리거 영역 */}
       <div
-        className="fixed left-0 top-16 w-2 h-[calc(100vh-4rem)] z-[60]"
+        className="fixed left-0 top-16 w-2 h-[calc(100vh-4rem)] z-[60] hidden md:block"
         onMouseEnter={() => setIsHovered(true)}
       />
 
@@ -205,14 +221,27 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{ background: 'linear-gradient(to bottom, #1E0F05, #2F1A0A)', borderColor: '#4A2C17' }}
-        className={`fixed left-0 top-18 h-[calc(100vh-4rem)] w-64 shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r
-          ${isHovered ? 'translate-x-0' : '-translate-x-full'}
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r
+          ${isVisible ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Project Info */}
-        <div className="p-4 sticky top-0 z-10" style={{ backgroundColor: '#1E0F05', borderBottom: '1px solid #4A2C17' }}>
-          <h2 className="font-bold text-base mb-0.5 truncate" style={{ color: '#F0DFC5' }}>{currentProject.title}</h2>
-          <p className="text-xs line-clamp-2" style={{ color: '#9A6B42' }}>{currentProject.description}</p>
+        <div className="p-4 sticky top-0 z-10 flex items-start justify-between gap-2" style={{ backgroundColor: '#1E0F05', borderBottom: '1px solid #4A2C17' }}>
+          <div className="min-w-0">
+            <h2 className="font-bold text-base mb-0.5 truncate" style={{ color: '#F0DFC5' }}>{currentProject.title}</h2>
+            <p className="text-xs line-clamp-2" style={{ color: '#9A6B42' }}>{currentProject.description}</p>
+          </div>
+          {/* 모바일 전용 닫기 버튼 */}
+          <button
+            onClick={onMobileClose}
+            className="md:hidden flex-shrink-0 p-1 rounded hover:opacity-70 transition-opacity"
+            style={{ color: '#9A6B42' }}
+            aria-label="닫기"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Navigation */}
@@ -223,6 +252,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onMobileClose}
                 style={pathname === item.href
                   ? { backgroundColor: '#8B5A2B', color: '#F0DFC5' }
                   : { color: '#D4B896' }
@@ -246,6 +276,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
               <Link
                 key={tool.href}
                 href={tool.href}
+                onClick={onMobileClose}
                 style={pathname === tool.href
                   ? { backgroundColor: '#8B5A2B', color: '#F0DFC5' }
                   : { color: '#C4935A' }
@@ -267,9 +298,9 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Content area */}
+      {/* Content area (데스크톱 전용 padding 조정) */}
       <main
-        className={`flex-1 transition-all duration-300 ease-in-out pt-16
+        className={`flex-1 transition-all duration-300 ease-in-out hidden md:block
           ${isHovered ? 'pl-64' : 'pl-0'}
         `}
       >
