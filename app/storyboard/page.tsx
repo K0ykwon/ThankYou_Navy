@@ -102,6 +102,34 @@ export default function StoryboardPage() {
   const [lastReport, setLastReport] = useState<any>(null);
   const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
 
+  // 씬 삽화 생성
+  const [generatingSceneId, setGeneratingSceneId] = useState<string | null>(null);
+  const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
+
+  const handleGenerateSceneIllustration = async (event: SceneEvent) => {
+    const eventChars = (currentProject?.characters || []).filter(c => event.characterIds.includes(c.id));
+    const charDesc = eventChars.map(c => `${c.name}${c.appearance ? `(${c.appearance})` : ''}`).join(', ');
+    const prompt = `Anime/manga style scene illustration. Scene title: "${event.title}". ${event.description ? `Description: ${event.description}.` : ''} ${charDesc ? `Characters in scene: ${charDesc}.` : ''} Dynamic cinematic composition, detailed art, high quality, vivid colors.`;
+    setGeneratingSceneId(event.id);
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (data.imageData) {
+        setSceneImages(prev => ({ ...prev, [event.id]: `data:${data.mimeType};base64,${data.imageData}` }));
+      } else {
+        alert('삽화 생성 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (e: any) {
+      alert('삽화 생성 중 오류: ' + (e.message || e));
+    } finally {
+      setGeneratingSceneId(null);
+    }
+  };
+
   // 프로젝트 로드 시 저장된 일관성 리포트 복원
   useEffect(() => {
     if (currentProject?.consistencyReport) {
@@ -352,6 +380,17 @@ export default function StoryboardPage() {
                     className="bg-white dark:bg-gray-800 border-l-4 border-purple-500 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
                   >
                     <div className="p-6">
+                      {/* 생성된 씬 삽화 */}
+                      {sceneImages[event.id] && (
+                        <div className="mb-4 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <img
+                            src={sceneImages[event.id]}
+                            alt={`${event.title} 삽화`}
+                            className="w-full object-cover max-h-64"
+                          />
+                        </div>
+                      )}
+
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-4 flex-1">
                           <div className="flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-900/40 rounded-full text-purple-600 dark:text-purple-400 font-bold flex-shrink-0 text-sm">
@@ -390,16 +429,31 @@ export default function StoryboardPage() {
                         </div>
                       )}
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        {/* 삽화 생성 버튼 */}
+                        <button
+                          onClick={() => handleGenerateSceneIllustration(event)}
+                          disabled={generatingSceneId === event.id}
+                          className="flex-1 min-w-[100px] bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-sm flex items-center justify-center gap-1"
+                        >
+                          {generatingSceneId === event.id ? (
+                            <>
+                              <span className="animate-spin">⏳</span>
+                              <span>생성 중...</span>
+                            </>
+                          ) : (
+                            <>🎨 삽화 생성</>
+                          )}
+                        </button>
                         <button
                           onClick={() => handleEdit(event)}
-                          className="flex-1 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                          className="flex-1 min-w-[60px] bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                         >
                           수정
                         </button>
                         <button
                           onClick={() => deleteSceneEvent(event.id)}
-                          className="flex-1 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                          className="flex-1 min-w-[60px] bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                         >
                           삭제
                         </button>
