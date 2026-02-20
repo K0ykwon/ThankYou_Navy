@@ -11,7 +11,7 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const { currentProject } = useCreative();
+  const { currentProject, addEpisode, updateEpisode, addSceneEvent, addCharacter } = useCreative();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,9 +38,93 @@ export default function ChatPage() {
     projectDescription: currentProject.description,
     settingData: currentProject.settingData,
     characters: currentProject.characters,
+    episodes: currentProject.episodes || [],
     sceneEvents: currentProject.timeline?.events || [],
     worldSetting: currentProject.worldSetting,
   });
+
+  // 에이전트 tool call 실행 및 결과 메시지 생성
+  const executeToolCalls = async (toolCalls: { id: string; name: string; args: any }[]): Promise<string[]> => {
+    const results: string[] = [];
+    for (const tc of toolCalls) {
+      try {
+        if (tc.name === 'add_character') {
+          const newChar = {
+            id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6),
+            name: tc.args.name,
+            role: tc.args.role || '',
+            description: tc.args.description || '',
+            appearance: tc.args.appearance || '',
+            personality: tc.args.personality || '',
+            backstory: tc.args.backstory || '',
+            relationships: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          await addCharacter(newChar);
+          results.push(`✅ 캐릭터 **${tc.args.name}** 추가 완료`);
+        } else if (tc.name === 'add_scene') {
+          const charIds = (currentProject?.characters || [])
+            .filter((c: any) => (tc.args.character_names || []).includes(c.name))
+            .map((c: any) => c.id);
+          const newScene = {
+            id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6),
+            title: tc.args.title,
+            description: tc.args.description || '',
+            timestamp: tc.args.timestamp || 0,
+            characterIds: charIds,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          await addSceneEvent(newScene);
+          results.push(`✅ 씬 **${tc.args.title}** 추가 완료`);
+        } else if (tc.name === 'add_episode') {
+          const chapterNum = (currentProject?.episodes?.length || 0) + 1;
+          const newEp = {
+            id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6),
+            title: tc.args.title,
+            content: tc.args.content || '',
+            chapterNumber: chapterNum,
+            scenes: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          await addEpisode(newEp);
+          results.push(`✅ 회차 **${chapterNum}화 ${tc.args.title}** 추가 완료`);
+        } else if (tc.name === 'write_episode_content') {
+          const eps = currentProject?.episodes || [];
+          const targetEp = tc.args.episode_title
+            ? eps.find((e: any) => e.title === tc.args.episode_title)
+            : eps[eps.length - 1];
+          if (targetEp) {
+            const newContent = tc.args.append
+              ? (targetEp.content || '') + '\n\n' + tc.args.content
+              : tc.args.content;
+            await updateEpisode(targetEp.id, { content: newContent });
+            results.push(`✅ **${targetEp.title}** 내용 저장 완료 (${tc.args.content.length}자)`);
+          } else {
+            // 회차가 없으면 새로 만들어서 저장
+            const chapterNum = (currentProject?.episodes?.length || 0) + 1;
+            const title = tc.args.episode_title || `${chapterNum}화`;
+            const newEp = {
+              id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6),
+              title,
+              content: tc.args.content,
+              chapterNumber: chapterNum,
+              scenes: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            await addEpisode(newEp);
+            results.push(`✅ 새 회차 **${title}** 생성 및 내용 저장 완료`);
+          }
+        }
+      } catch (err: any) {
+        results.push(`⚠️ ${tc.name} 실행 실패: ${err.message || err}`);
+      }
+    }
+    return results;
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -65,10 +149,21 @@ export default function ChatPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'API 오류');
 
+      // tool call 실행 (에이전트 저장)
+      let toolResults: string[] = [];
+      if (Array.isArray(data.toolCalls) && data.toolCalls.length > 0) {
+        toolResults = await executeToolCalls(data.toolCalls);
+      }
+
+      // 메시지 조합: AI 답변 + 도구 실행 결과
+      const replyParts: string[] = [];
+      if (data.reply) replyParts.push(data.reply);
+      if (toolResults.length > 0) replyParts.push(toolResults.join('\n'));
+
       const assistantMsg: Message = {
         id: Date.now().toString() + '-a',
         role: 'assistant',
-        content: data.reply,
+        content: replyParts.join('\n\n') || '(작업 완료)',
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err: any) {

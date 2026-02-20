@@ -86,17 +86,13 @@ export default function TimelinePage() {
     {
       id: 'none',
       label: '🌍 세계관 전체',
-      sublabel: '회차에 속하지 않는 이벤트',
-      color: 'border-purple-500',
-      badgeColor: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300',
+      isWorld: true,
       events: worldEvents,
     },
     ...episodes.map(ep => ({
       id: ep.id,
       label: `📖 ${ep.chapterNumber ? ep.chapterNumber + '화' : ''} ${ep.title}`.trim(),
-      sublabel: ep.chapterNumber ? `${ep.chapterNumber}화` : '',
-      color: 'border-blue-500',
-      badgeColor: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+      isWorld: false,
       events: timeline.filter(e => e.episodeId === ep.id).sort((a, b) => a.year - b.year),
     })),
   ];
@@ -232,7 +228,7 @@ export default function TimelinePage() {
               >
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-gray-900 dark:text-white text-lg">{group.label}</span>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${group.badgeColor}`}>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${group.isWorld ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'}`}>
                     {group.events.length}개
                   </span>
                 </div>
@@ -254,8 +250,8 @@ export default function TimelinePage() {
                   ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {group.events.map((event) => (
-                        <div key={event.id} className={`flex gap-0 pl-0`}>
-                          <div className={`w-1 flex-shrink-0 ${group.color.replace('border-', 'bg-')}`} />
+                        <div key={event.id} className="flex gap-0 pl-0">
+                          <div className={`w-1 flex-shrink-0 ${group.isWorld ? 'bg-purple-500' : 'bg-blue-500'}`} />
                           <div className="flex-1 px-5 py-4 flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
