@@ -331,6 +331,7 @@ export function CreativeProvider({
           if (updates.fileTree !== undefined) updateData.file_tree = updates.fileTree;
           if (updates.timeline !== undefined) updateData.timeline = updates.timeline;
           if ((updates as any).settingData !== undefined) updateData.setting_data = (updates as any).settingData;
+          if (updates.worldSetting !== undefined) updateData.world_setting = updates.worldSetting;
 
           const { error } = await supabase
             .from('projects')
@@ -422,11 +423,67 @@ export function CreativeProvider({
     }
   }, []);
 
-  const selectProject = useCallback((id: string) => {
-    setCurrentProject((prev) => {
-      const project = projects.find((p) => p.id === id);
-      return project || prev;
-    });
+  const selectProject = useCallback(async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return;
+    setCurrentProject(project);
+
+    // DB에서 scene_events와 episodes를 실제로 로드
+    if (supabase) {
+      try {
+        // scene_events 로드
+        const { data: events, error: evError } = await supabase
+          .from('scene_events')
+          .select('*')
+          .eq('project_id', id)
+          .order('timestamp', { ascending: true });
+
+        if (!evError && events && events.length > 0) {
+          const sceneEvents: SceneEvent[] = events.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description || '',
+            timestamp: e.timestamp || 0,
+            characterIds: e.character_ids || [],
+            createdAt: new Date(e.created_at),
+            updatedAt: new Date(e.updated_at),
+          }));
+          setCurrentProject((prev) => {
+            if (!prev || prev.id !== id) return prev;
+            return {
+              ...prev,
+              timeline: { ...prev.timeline, events: sceneEvents },
+            };
+          });
+        }
+
+        // episodes 로드
+        const { data: eps, error: epError } = await supabase
+          .from('episodes')
+          .select('*')
+          .eq('project_id', id)
+          .order('chapter_number', { ascending: true });
+
+        if (!epError && eps && eps.length > 0) {
+          const episodes: import('@/types').Episode[] = eps.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            content: e.content || undefined,
+            summary: e.summary || undefined,
+            chapterNumber: e.chapter_number || undefined,
+            scenes: e.scenes || [],
+            createdAt: new Date(e.created_at),
+            updatedAt: new Date(e.updated_at),
+          }));
+          setCurrentProject((prev) => {
+            if (!prev || prev.id !== id) return prev;
+            return { ...prev, episodes };
+          });
+        }
+      } catch (err) {
+        console.warn('DB에서 프로젝트 데이터 로드 실패:', err);
+      }
+    }
   }, [projects]);
 
   // ==================== 캐릭터 관리 ====================
@@ -723,6 +780,7 @@ export function CreativeProvider({
             id: episode.id,
             project_id: currentProject.id,
             title: episode.title,
+            content: episode.content || null,
             summary: episode.summary || null,
             chapter_number: episode.chapterNumber || null,
             scenes: episode.scenes || [],
@@ -751,11 +809,13 @@ export function CreativeProvider({
 
   const updateEpisode = useCallback(async (id: string, updates: Partial<import('@/types').Episode>) => {
     try {
-      // Supabase에 업데이트
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
+      // Supabase에 업데이트 (snake_case 컬럼 매핑)
+      const updateData: any = { updated_at: new Date().toISOString() };
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.content !== undefined) updateData.content = updates.content;
+      if (updates.summary !== undefined) updateData.summary = updates.summary;
+      if (updates.chapterNumber !== undefined) updateData.chapter_number = updates.chapterNumber;
+      if (updates.scenes !== undefined) updateData.scenes = updates.scenes;
 
       const { error } = await supabase
         .from('episodes')

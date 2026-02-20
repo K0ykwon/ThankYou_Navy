@@ -5,6 +5,43 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCreative } from '@/context/CreativeContext';
 
+// SVG Icon Components
+const ChevronDownIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+  </svg>
+);
+
+const FolderIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+  </svg>
+);
+
+const PencilIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+  </svg>
+);
+
 interface TreeNodeProps {
   id: string;
   name: string;
@@ -37,28 +74,25 @@ function TreeNode({
     }
   };
 
-  const paddingLeft = depth * 16;
+  const paddingLeft = depth * 16 + 12;
 
   return (
     <div>
       <div
-        className="flex items-center px-3 py-2 hover:bg-gray-700 dark:hover:bg-gray-700 cursor-pointer rounded transition-colors text-gray-200 dark:text-gray-300"
-        style={{ paddingLeft: `${paddingLeft}px` }}
+        className="group flex items-center py-1.5 hover:bg-gray-700/60 cursor-pointer rounded transition-colors text-gray-200"
+        style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '8px' }}
       >
-        {type === 'folder' && children && children.length > 0 && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mr-1 text-gray-400 hover:text-white"
-          >
-            {isExpanded ? 'v' : '>'}
-          </button>
-        )}
-        {type === 'folder' && (!children || children.length === 0) && (
-          <span className="mr-1 text-gray-400 w-4"></span>
-        )}
+        {/* Expand/collapse chevron for folders */}
+        <button
+          onClick={() => type === 'folder' && setIsExpanded(!isExpanded)}
+          className={`mr-1 text-gray-500 hover:text-gray-300 w-4 flex-shrink-0 flex items-center justify-center ${type !== 'folder' || !children?.length ? 'invisible' : ''}`}
+        >
+          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        </button>
 
+        {/* File/Folder icon */}
         <span className="mr-2">
-          {type === 'folder' ? '[F]' : '[f]'}
+          {type === 'folder' ? <FolderIcon /> : <FileIcon />}
         </span>
 
         {isRenaming ? (
@@ -72,33 +106,34 @@ function TreeNode({
               if (e.key === 'Enter') handleRename();
               if (e.key === 'Escape') setIsRenaming(false);
             }}
-            className="bg-gray-600 text-white px-2 py-1 rounded flex-1"
+            className="bg-gray-600 text-white px-2 py-0.5 rounded flex-1 text-sm outline-none"
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span
-            className="flex-1 text-gray-100 text-sm"
+            className="flex-1 text-gray-100 text-sm truncate"
             onDoubleClick={() => setIsRenaming(true)}
           >
             {name}
           </span>
         )}
 
-        <div className="flex gap-1 opacity-0 hover:opacity-100 transition-opacity">
+        {/* Action buttons - visible on hover */}
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
           <button
-            onClick={() => setIsRenaming(true)}
-            className="p-1 hover:bg-gray-600 rounded text-xs"
-            title="Rename"
+            onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}
+            className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+            title="이름 바꾸기"
           >
-            R
+            <PencilIcon />
           </button>
           {onDelete && (
             <button
-              onClick={() => onDelete(id)}
-              className="p-1 hover:bg-red-600 rounded text-xs"
-              title="Delete"
+              onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+              className="p-1 hover:bg-red-600 rounded text-gray-400 hover:text-white transition-colors"
+              title="삭제"
             >
-              X
+              <TrashIcon />
             </button>
           )}
         </div>
@@ -123,23 +158,10 @@ function TreeNode({
 }
 
 export default function Sidebar({ children }: { children?: React.ReactNode }) {
-  const {
-    currentProject,
-    createFolder,
-    createFile,
-    renameElement,
-    deleteFileOrFolder,
-  } = useCreative();
+  const { currentProject } = useCreative();
   const pathname = usePathname();
 
-  // 사이드바 호버 상태
   const [isHovered, setIsHovered] = useState(false);
-
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-  const [showNewFileInput, setShowNewFileInput] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [newFileName, setNewFileName] = useState('');
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
   if (!currentProject) {
     return <>{children}</>;
@@ -153,39 +175,21 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
   ];
 
   const specialTools = [
-    { label: 'Todo', href: '/tools/todo' },
-    { label: 'Timeline', href: '/tools/timeline' },
-    { label: 'Mindmap', href: '/tools/mindmap' },
-    { label: 'Negative Arc', href: '/tools/negative-arc' },
+    { label: 'Todo', href: '/tools/todo', icon: '✅' },
+    { label: 'Timeline', href: '/tools/timeline', icon: '📅' },
+    { label: 'Mindmap', href: '/tools/mindmap', icon: '🗺️' },
+    { label: 'Negative Arc', href: '/tools/negative-arc', icon: '📉' },
   ];
-
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      createFolder(selectedParentId, newFolderName);
-      setNewFolderName('');
-      setShowNewFolderInput(false);
-      setSelectedParentId(null);
-    }
-  };
-
-  const handleCreateFile = () => {
-    if (newFileName.trim()) {
-      createFile(selectedParentId, newFileName);
-      setNewFileName('');
-      setShowNewFileInput(false);
-      setSelectedParentId(null);
-    }
-  };
 
   return (
     <div className="flex min-h-screen">
-      {/* 1. 마우스 감지 영역 (사이드바가 들어가 있을 때 트리거) */}
-      <div 
+      {/* Mouse trigger zone */}
+      <div
         className="fixed left-0 top-16 w-2 h-[calc(100vh-4rem)] z-[60]"
         onMouseEnter={() => setIsHovered(true)}
       />
 
-      {/* 2. 실제 사이드바 */}
+      {/* Sidebar */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -193,138 +197,62 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
           ${isHovered ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* ==================== 프로젝트 정보 ==================== */}
+        {/* Project Info */}
         <div className="p-4 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
-          <h2 className="font-bold text-lg text-white mb-1 truncate">{currentProject.title}</h2>
+          <h2 className="font-bold text-base text-white mb-0.5 truncate">{currentProject.title}</h2>
           <p className="text-xs text-gray-400 line-clamp-2">{currentProject.description}</p>
         </div>
 
-        {/* ==================== 네비게이션 메뉴 ==================== */}
+        {/* Navigation */}
         <div className="px-3 py-4 border-b border-gray-700">
-          <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">메뉴</h3>
-          <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider px-1">메뉴</h3>
+          <div className="space-y-0.5">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                   pathname === item.href
-                    ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
+                <span className="text-base leading-none">{item.icon}</span>
                 <span className="text-sm font-medium">{item.label}</span>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* ==================== 파일/폴더 관리 ==================== */}
-        {/* <div className="p-4 border-b border-gray-700">
-          <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">폴더 및 파일</h3>
-          <div className="space-y-2">
-            <button
-              onClick={() => setShowNewFolderInput(!showNewFolderInput)}
-              className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              [+] 폴더 생성
-            </button>
-            <button
-              onClick={() => setShowNewFileInput(!showNewFileInput)}
-              className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              [+] 파일 생성
-            </button>
-          </div> */}
-
-          {/* {showNewFolderInput && (
-            <div className="mt-3 space-y-2">
-              <input
-                autoFocus
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="폴더 이름"
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-blue-500 outline-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={handleCreateFolder} className="flex-1 px-2 py-1 bg-blue-600 rounded text-xs">생성</button>
-                <button onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }} className="flex-1 px-2 py-1 bg-gray-600 rounded text-xs">취소</button>
-              </div>
-            </div>
-          )} */}
-
-          {/* {showNewFileInput && (
-            <div className="mt-3 space-y-2">
-              <input
-                autoFocus
-                type="text"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                placeholder="파일 이름"
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded text-sm border border-gray-600 focus:border-green-500 outline-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={handleCreateFile} className="flex-1 px-2 py-1 bg-green-600 rounded text-xs">생성</button>
-                <button onClick={() => { setShowNewFileInput(false); setNewFileName(''); }} className="flex-1 px-2 py-1 bg-gray-600 rounded text-xs">취소</button>
-              </div>
-            </div>
-          )}
-        </div> */}
-
-        {/* ==================== 파일 트리 ==================== */}
-        {/* <div className="flex-1 p-4 border-b border-gray-700 overflow-y-auto">
-          <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">파일 구조</h3>
-          {currentProject.fileTree && currentProject.fileTree.length > 0 ? (
-            <div className="space-y-1">
-              {currentProject.fileTree.map((element: any) => (
-                <TreeNode
-                  key={element.id}
-                  {...element}
-                  depth={0}
-                  onRename={(id, newName) => renameElement(id, newName, null)}
-                  onDelete={(id) => deleteFileOrFolder(id, null)}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500">파일이 없습니다</p>
-          )}
-        </div> */}
-
-        {/* ==================== 특수 도구 ==================== */}
-        <div className="p-4 border-b border-gray-700">
-          <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">특수 도구</h3>
-          <div className="space-y-2">
+        {/* Special Tools */}
+        <div className="px-3 py-4 border-b border-gray-700">
+          <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider px-1">특수 도구</h3>
+          <div className="space-y-0.5">
             {specialTools.map((tool) => (
               <Link
                 key={tool.href}
                 href={tool.href}
-                className="block px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-100 rounded text-sm transition-colors flex items-center gap-2"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  pathname === tool.href
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:bg-gray-700 hover:text-gray-100'
+                }`}
               >
-                <span>⚙️</span>
-                <span>{tool.label}</span>
+                <span className="text-sm leading-none">{tool.icon}</span>
+                <span className="text-sm">{tool.label}</span>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* ==================== 푸터 ==================== */}
-        <div className="p-4 border-t border-gray-700 text-xs text-gray-400 mt-auto">
-          <p>Creative Studio 2026</p>
-          {/* <Link 
-            href="/" 
-            onClick={() => setIsHovered(false)} // 클릭 시 사이드바 닫기
-            className="text-blue-400 hover:text-blue-300 mt-2 block"
-          >
-            ← 프로젝트 목록
-          </Link> */}
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-700 text-xs text-gray-500 mt-auto">
+          Creative Studio 2026
         </div>
       </aside>
 
-      {/* 3. 본문 영역 (사이드바 상태에 따라 밀림) */}
-      <main 
+      {/* Content area */}
+      <main
         className={`flex-1 transition-all duration-300 ease-in-out pt-16
           ${isHovered ? 'pl-64' : 'pl-0'}
         `}

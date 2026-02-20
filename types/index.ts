@@ -97,6 +97,7 @@ export interface TimelineEvent {
 export interface Episode {
   id: string;
   title: string;
+  content?: string;
   summary?: string;
   chapterNumber?: number;
   scenes?: SceneEvent[];
