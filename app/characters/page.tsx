@@ -31,6 +31,32 @@ export default function CharactersPage() {
   const [extracting, setExtracting] = useState(false);
   const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
 
+  // 삽화 생성
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [charImages, setCharImages] = useState<Record<string, string>>({});
+
+  const handleGenerateIllustration = async (character: Character) => {
+    setGeneratingId(character.id);
+    const prompt = `Beautiful anime/manga style character portrait illustration of "${character.name}"${character.role ? `, ${character.role}` : ''}. Appearance: ${character.appearance || 'average build, neutral expression'}. Personality: ${character.personality || 'calm and composed'}. Full body illustration, soft warm lighting, detailed art style, clean white background, high quality.`;
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (data.imageData) {
+        setCharImages(prev => ({ ...prev, [character.id]: `data:${data.mimeType};base64,${data.imageData}` }));
+      } else {
+        alert('삽화 생성 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (e: any) {
+      alert('삽화 생성 중 오류: ' + (e.message || e));
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
   const handleExtract = async () => {
     if (!currentProject) return;
     const episodes = currentProject.episodes || [];
@@ -339,6 +365,16 @@ export default function CharactersPage() {
                   key={character.id}
                   className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500"
                 >
+                  {/* 생성된 삽화 */}
+                  {charImages[character.id] && (
+                    <div className="mb-4 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <img
+                        src={charImages[character.id]}
+                        alt={`${character.name} 삽화`}
+                        className="w-full object-cover max-h-64"
+                      />
+                    </div>
+                  )}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -378,10 +414,25 @@ export default function CharactersPage() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-4 flex-wrap">
+                    {/* 삽화 생성 버튼 */}
+                    <button
+                      onClick={() => handleGenerateIllustration(character as Character)}
+                      disabled={generatingId === character.id}
+                      className="flex-1 min-w-[100px] bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-sm flex items-center justify-center gap-1"
+                    >
+                      {generatingId === character.id ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          <span>생성 중...</span>
+                        </>
+                      ) : (
+                        <>🎨 삽화 생성</>
+                      )}
+                    </button>
                     <button
                       onClick={() => handleEdit(character as Character)}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                      className="flex-1 min-w-[60px] bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                     >
                       수정
                     </button>
@@ -390,7 +441,7 @@ export default function CharactersPage() {
                         if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
                         deleteCharacter(character.id);
                       }}
-                      className="flex-1 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                      className="flex-1 min-w-[60px] bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                     >
                       삭제
                     </button>

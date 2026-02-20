@@ -7,7 +7,7 @@ import Link from 'next/link';
 import ConsistencyReport from '@/components/ConsistencyReport';
 
 export default function EditorPage() {
-  const { currentProject, updateProject, updateEpisode, addEpisode } = useCreative();
+  const { currentProject, updateProject, updateEpisode, addEpisode, deleteEpisode } = useCreative();
   const [content, setContent] = useState('');
   const [isSaved, setIsSaved] = useState(true);
   const [wordCount, setWordCount] = useState(0);
@@ -178,20 +178,36 @@ export default function EditorPage() {
             </button>
 
             {episodes.map((ep, idx) => (
-              <button
-                key={ep.id}
-                onClick={() => setSelectedEpisodeId(ep.id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 transition-colors ${
-                  selectedEpisodeId === ep.id
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">
-                  {ep.chapterNumber ? `${ep.chapterNumber}화` : `${idx + 1}화`}
-                </p>
-                <p className="text-sm truncate mt-0.5 leading-snug">{ep.title}</p>
-              </button>
+              <div key={ep.id} className="relative group border-b border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setSelectedEpisodeId(ep.id)}
+                  className={`w-full text-left px-3 py-2.5 pr-8 transition-colors ${
+                    selectedEpisodeId === ep.id
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                    {ep.chapterNumber ? `${ep.chapterNumber}화` : `${idx + 1}화`}
+                  </p>
+                  <p className="text-sm truncate mt-0.5 leading-snug">{ep.title}</p>
+                </button>
+                {/* 삭제 버튼 - hover 시 표시 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!confirm(`"${ep.title}" 회차를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+                    if (selectedEpisodeId === ep.id) setSelectedEpisodeId(null);
+                    deleteEpisode(ep.id);
+                  }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
+                  title="회차 삭제"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             ))}
 
             {episodes.length === 0 && (

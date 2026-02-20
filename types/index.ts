@@ -89,6 +89,7 @@ export interface TimelineEvent {
   year: number;
   title: string;
   description?: string;
+  episodeId?: string;  // 연결된 회차 ID (없으면 세계관 전체)
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -8,13 +8,17 @@ import { extractTimeline } from '@/lib/somniApi';
 export default function TimelinePage() {
   const { currentProject, updateProjectField: updateField } = useCreative();
   const updateProjectField = updateField;
+
   const [newEvent, setNewEvent] = useState<Partial<TimelineEvent>>({
     year: new Date().getFullYear(),
     title: '',
     description: '',
+    episodeId: undefined,
   });
   const [timelineReport, setTimelineReport] = useState<any>(null);
   const [runningCheck, setRunningCheck] = useState(false);
+  // 보기 필터: 'all' | 회차 id | 'none'(세계관)
+  const [filterEpisodeId, setFilterEpisodeId] = useState<string>('all');
 
   const handleTimelineCheck = async () => {
     if (!currentProject) return;
@@ -42,8 +46,24 @@ export default function TimelinePage() {
     );
   }
 
+  const episodes = currentProject.episodes || [];
   const timelineAll = currentProject.timeline?.events || [];
   const timeline = timelineAll.filter((e): e is TimelineEvent => (e as any).year !== undefined);
+
+  // 필터링된 이벤트
+  const filteredTimeline = (() => {
+    if (filterEpisodeId === 'all') return timeline;
+    if (filterEpisodeId === 'none') return timeline.filter(e => !e.episodeId);
+    return timeline.filter(e => e.episodeId === filterEpisodeId);
+  })();
+  const sortedTimeline = [...filteredTimeline].sort((a, b) => a.year - b.year);
+
+  // 회차별 이벤트 수 집계 (탭 표시용)
+  const countByEpisode = (epId: string | 'all' | 'none') => {
+    if (epId === 'all') return timeline.length;
+    if (epId === 'none') return timeline.filter(e => !e.episodeId).length;
+    return timeline.filter(e => e.episodeId === epId).length;
+  };
 
   const handleAddEvent = () => {
     if (newEvent.title?.trim()) {
@@ -52,11 +72,12 @@ export default function TimelinePage() {
         year: newEvent.year || new Date().getFullYear(),
         title: newEvent.title,
         description: newEvent.description || '',
+        episodeId: newEvent.episodeId || undefined,
       };
       const updatedTimelineEvents = [...timeline, event].sort((a, b) => a.year - b.year);
       const updatedTimeline = { ...currentProject.timeline, events: updatedTimelineEvents };
       updateProjectField('timeline', updatedTimeline);
-      setNewEvent({ year: new Date().getFullYear(), title: '', description: '' });
+      setNewEvent({ year: new Date().getFullYear(), title: '', description: '', episodeId: undefined });
     }
   };
 
@@ -66,9 +87,17 @@ export default function TimelinePage() {
     updateProjectField('timeline', updatedTimeline);
   };
 
+  const episodeLabelOf = (epId?: string) => {
+    if (!epId) return '세계관 전체';
+    const ep = episodes.find(e => e.id === epId);
+    if (!ep) return '미분류';
+    return `${ep.chapterNumber ? ep.chapterNumber + '화' : ''} ${ep.title}`;
+  };
+
   return (
     <div className="flex-1 p-8 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto">
+        {/* 헤더 */}
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">📅 Timeline</h1>
           <button
@@ -79,7 +108,7 @@ export default function TimelinePage() {
             {runningCheck ? '검사 중...' : '🔍 타임라인 일관성 검사'}
           </button>
         </div>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">스토리의 시간순 이벤트를 관리하세요.</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">스토리의 시간순 이벤트를 회차별로 관리하세요.</p>
 
         {/* 타임라인 일관성 검사 결과 */}
         {timelineReport && (
@@ -89,13 +118,11 @@ export default function TimelinePage() {
               <button onClick={() => setTimelineReport(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">닫기</button>
             </div>
             <div className="p-5 space-y-4">
-              {/* 추출된 타임라인 이벤트 수 */}
               {Array.isArray(timelineReport.timeline) && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   추출된 타임라인 이벤트: <span className="font-bold text-gray-900 dark:text-white">{timelineReport.timeline.length}개</span>
                 </p>
               )}
-              {/* 타임라인 일관성 */}
               {timelineReport.timeline_consistency && (() => {
                 const tc = timelineReport.timeline_consistency;
                 return (
@@ -121,7 +148,6 @@ export default function TimelinePage() {
                   </div>
                 );
               })()}
-              {/* fallback: 아무 일관성 필드도 없으면 안내 */}
               {!timelineReport.timeline_consistency && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   일관성 검사 결과가 없습니다. 설정 데이터(캐릭터 추출)가 필요합니다.
@@ -131,14 +157,12 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {/* 새로운 이벤트 추가 */}
+        {/* 새 이벤트 추가 폼 */}
         <div className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">새로운 이벤트</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                연도
-              </label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">연도</label>
               <input
                 type="number"
                 value={newEvent.year || ''}
@@ -147,9 +171,7 @@ export default function TimelinePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                제목
-              </label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">제목</label>
               <input
                 type="text"
                 value={newEvent.title || ''}
@@ -160,9 +182,7 @@ export default function TimelinePage() {
             </div>
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              설명
-            </label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">설명</label>
             <textarea
               value={newEvent.description || ''}
               onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
@@ -170,6 +190,22 @@ export default function TimelinePage() {
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
             />
+          </div>
+          {/* 회차 연결 */}
+          <div className="mb-4">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">연결 회차</label>
+            <select
+              value={newEvent.episodeId || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, episodeId: e.target.value || undefined })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="">세계관 전체 (회차 없음)</option>
+              {episodes.map((ep) => (
+                <option key={ep.id} value={ep.id}>
+                  {ep.chapterNumber ? `${ep.chapterNumber}화` : ''} {ep.title}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             onClick={handleAddEvent}
@@ -179,31 +215,61 @@ export default function TimelinePage() {
           </button>
         </div>
 
+        {/* 회차별 필터 탭 */}
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {[
+            { id: 'all', label: `전체 (${countByEpisode('all')})` },
+            { id: 'none', label: `세계관 (${countByEpisode('none')})` },
+            ...episodes.map(ep => ({
+              id: ep.id,
+              label: `${ep.chapterNumber ? ep.chapterNumber + '화' : ''} ${ep.title} (${countByEpisode(ep.id)})`.trim(),
+            })),
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterEpisodeId(tab.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filterEpisodeId === tab.id
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:border-indigo-400'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Timeline 리스트 */}
         <div className="space-y-4">
-          {timeline.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">아직 이벤트가 없습니다.</p>
+          {sortedTimeline.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">이 필터에 해당하는 이벤트가 없습니다.</p>
           ) : (
-            timeline.map((event: TimelineEvent, index: number) => (
-              <div
-                key={event.id}
-                className="flex gap-4 pb-4 border-l-4 border-blue-500 pl-4"
-              >
+            sortedTimeline.map((event: TimelineEvent) => (
+              <div key={event.id} className="flex gap-4 pb-4 border-l-4 border-blue-500 pl-4">
                 <div className="flex-1">
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-1">
-                          {event.year}
-                        </h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {event.year}
+                          </h3>
+                          {event.episodeId && (
+                            <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                              📖 {episodeLabelOf(event.episodeId)}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                           {event.title}
                         </p>
-                        <p className="text-gray-600 dark:text-gray-400">{event.description}</p>
+                        {event.description && (
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">{event.description}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="px-3 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm rounded transition-colors"
+                        className="ml-4 px-3 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm rounded transition-colors flex-shrink-0"
                       >
                         삭제
                       </button>
