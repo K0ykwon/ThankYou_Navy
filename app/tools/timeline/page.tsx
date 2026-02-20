@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useCreative } from '@/context/CreativeContext';
 import type { TimelineEvent } from '@/types';
+import { extractTimeline } from '@/lib/somniApi';
 
 export default function TimelinePage() {
   const { currentProject, updateProjectField: updateField } = useCreative();
@@ -12,6 +13,26 @@ export default function TimelinePage() {
     title: '',
     description: '',
   });
+  const [timelineReport, setTimelineReport] = useState<any>(null);
+  const [runningCheck, setRunningCheck] = useState(false);
+
+  const handleTimelineCheck = async () => {
+    if (!currentProject) return;
+    const rawText = currentProject.worldSetting || '';
+    if (!rawText.trim()) {
+      alert('세계관/스토리 텍스트가 없습니다. 텍스트 에디터에 내용을 먼저 입력하세요.');
+      return;
+    }
+    setRunningCheck(true);
+    try {
+      const res = await extractTimeline(rawText, currentProject.settingData || null);
+      setTimelineReport(res);
+    } catch (e: any) {
+      alert('타임라인 일관성 검사 실패: ' + (e.message || e));
+    } finally {
+      setRunningCheck(false);
+    }
+  };
 
   if (!currentProject) {
     return (
@@ -48,8 +69,67 @@ export default function TimelinePage() {
   return (
     <div className="flex-1 p-8 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">📅 Timeline</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">📅 Timeline</h1>
+          <button
+            onClick={handleTimelineCheck}
+            disabled={runningCheck}
+            className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-60"
+          >
+            {runningCheck ? '검사 중...' : '🔍 타임라인 일관성 검사'}
+          </button>
+        </div>
         <p className="text-gray-600 dark:text-gray-400 mb-8">스토리의 시간순 이벤트를 관리하세요.</p>
+
+        {/* 타임라인 일관성 검사 결과 */}
+        {timelineReport && (
+          <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 dark:text-white">🔍 타임라인 일관성 검사 결과</h3>
+              <button onClick={() => setTimelineReport(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">닫기</button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* 추출된 타임라인 이벤트 수 */}
+              {Array.isArray(timelineReport.timeline) && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  추출된 타임라인 이벤트: <span className="font-bold text-gray-900 dark:text-white">{timelineReport.timeline.length}개</span>
+                </p>
+              )}
+              {/* 타임라인 일관성 */}
+              {timelineReport.timeline_consistency && (() => {
+                const tc = timelineReport.timeline_consistency;
+                return (
+                  <div className="space-y-3">
+                    {typeof tc.passed === 'boolean' && (
+                      <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${tc.passed ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
+                        {tc.passed ? '✓ 타임라인 일관성 이상 없음' : '✗ 타임라인 일관성 문제 발견'}
+                      </div>
+                    )}
+                    {Array.isArray(tc.issues) && tc.issues.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {tc.issues.map((issue: string, i: number) => (
+                          <li key={i} className="flex gap-2 text-sm text-red-800 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 rounded-lg">
+                            <span className="font-bold flex-shrink-0">{i + 1}.</span>
+                            <span>{issue}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {tc.summary && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/40 px-3 py-2 rounded-lg">{tc.summary}</p>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* fallback: 아무 일관성 필드도 없으면 안내 */}
+              {!timelineReport.timeline_consistency && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  일관성 검사 결과가 없습니다. 설정 데이터(캐릭터 추출)가 필요합니다.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 새로운 이벤트 추가 */}
         <div className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

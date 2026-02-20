@@ -100,6 +100,7 @@ export default function StoryboardPage() {
 
   const [runningAuto, setRunningAuto] = useState(false);
   const [lastReport, setLastReport] = useState<any>(null);
+  const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
 
   // 프로젝트 로드 시 저장된 일관성 리포트 복원
   useEffect(() => {
@@ -110,8 +111,11 @@ export default function StoryboardPage() {
 
   const handleAutoExtract = async () => {
     if (!currentProject) return;
-    const raw = currentProject.worldSetting || '';
-    if (!raw.trim()) return alert('프로젝트의 텍스트(World Setting)가 비어있습니다. 먼저 내용을 입력하세요.');
+    const episodes = currentProject.episodes || [];
+    const raw = extractEpisodeId
+      ? (episodes.find(e => e.id === extractEpisodeId)?.content || '')
+      : (currentProject.worldSetting || '');
+    if (!raw.trim()) return alert('선택한 내용이 비어있습니다. 텍스트 에디터에서 먼저 내용을 작성해주세요.');
     setRunningAuto(true);
     try {
       const res = await extractTimeline(raw, currentProject.settingData || null);
@@ -191,13 +195,28 @@ export default function StoryboardPage() {
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm">{currentProject.title}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setShowForm(!showForm)}
               className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white font-bold py-2.5 px-5 rounded-lg transition-colors text-sm"
             >
               + 새 씬 추가
             </button>
+            {/* 회차 선택 드롭다운 */}
+            {(currentProject.episodes || []).length > 0 && (
+              <select
+                value={extractEpisodeId || ''}
+                onChange={(e) => setExtractEpisodeId(e.target.value || null)}
+                className="text-sm px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none"
+              >
+                <option value="">세계관 전체</option>
+                {currentProject.episodes.map((ep) => (
+                  <option key={ep.id} value={ep.id}>
+                    {ep.chapterNumber ? `${ep.chapterNumber}화` : ''} {ep.title}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               onClick={handleAutoExtract}
               disabled={runningAuto}

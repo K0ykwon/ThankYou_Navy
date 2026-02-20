@@ -491,127 +491,71 @@ export function CreativeProvider({
   // ==================== 캐릭터 관리 ====================
   const addCharacter = useCallback(
     async (character: Character) => {
-      try {
-        if (!currentProject) return;
-
-        // Update local state and project's setting_data (no characters table)
-          setCurrentProject((prev) => {
-            if (!prev) return prev;
-            const updatedChars = [...prev.characters, character];
-            const charItem: CharacterItem = {
-              name: character.name,
-              aliases: [],
-              description: character.description || null,
-              traits: character.appearance ? character.appearance.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean) : [],
-              relationships: {},
-              role: character.role || null,
-            };
-            const newSetting: SettingData = {
-              characters: [ ...(prev.settingData?.characters || []), charItem ],
-              relations: prev.settingData?.relations || [],
-              name_mapping: { ...(prev.settingData?.name_mapping || {}), [character.name]: [] },
-              world: prev.settingData?.world || [],
-              plot_threads: prev.settingData?.plot_threads || [],
-            };
-
-            const updated = {
-              ...prev,
-              characters: updatedChars,
-              settingData: newSetting,
-              updatedAt: new Date(),
-            };
-
-            // persist setting_data to projects table
-            updateProject(prev.id, { settingData: newSetting });
-            return updated;
-          });
-      } catch (err) {
-        console.error('Error adding character:', err);
-      }
+      if (!currentProject) return;
+      const charItem: CharacterItem = {
+        name: character.name,
+        aliases: [],
+        description: character.description || null,
+        traits: character.appearance ? character.appearance.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [],
+        relationships: {},
+        role: character.role || null,
+      };
+      const newSetting: SettingData = {
+        characters: [...(currentProject.settingData?.characters || []), charItem],
+        relations: currentProject.settingData?.relations || [],
+        name_mapping: { ...(currentProject.settingData?.name_mapping || {}), [character.name]: [] },
+        world: currentProject.settingData?.world || [],
+        plot_threads: currentProject.settingData?.plot_threads || [],
+      };
+      const updatedChars = [...currentProject.characters, character];
+      // updateProject handles both local state and DB write
+      await updateProject(currentProject.id, { settingData: newSetting, characters: updatedChars } as Partial<CreativeProject>);
     },
     [currentProject, updateProject]
   );
 
   const updateCharacter = useCallback(async (id: string, updates: Partial<Character>) => {
-    try {
-      // Update character within local characters and within settingData (no characters table)
-      setCurrentProject((prev) => {
-        if (!prev) return prev;
-
-        // update local characters array
-        const updatedLocalChars = prev.characters.map((c) =>
-          c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
-        );
-
-        // try to find matching setting_data character by name parsed from id or by name match
-        const nameCandidate = id.split('-')[0];
-        const settingChars = (prev.settingData?.characters || []).map((sc, idx) => {
-          if (sc.name === nameCandidate || sc.name === (updates.name || sc.name)) {
-            // merge fields
-            return {
-              ...sc,
-              name: updates.name ?? sc.name,
-              description: updates.description ?? sc.description,
-              role: (updates.role ?? sc.role) ?? null,
-              traits: updates.appearance ? String(updates.appearance).split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean) : sc.traits || [],
-            };
-          }
-          return sc;
-        });
-
-        const newSetting: SettingData = {
-          characters: settingChars,
-          relations: prev.settingData?.relations || [],
-          name_mapping: prev.settingData?.name_mapping || {},
-          world: prev.settingData?.world || [],
-          plot_threads: prev.settingData?.plot_threads || [],
-        };
-
-        // persist setting_data
-        updateProject(prev.id, { settingData: newSetting });
-
+    if (!currentProject) return;
+    const updatedLocalChars = currentProject.characters.map((c) =>
+      c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
+    );
+    const nameCandidate = id.split('-')[0];
+    const settingChars = (currentProject.settingData?.characters || []).map((sc) => {
+      if (sc.name === nameCandidate || sc.name === (updates.name || sc.name)) {
         return {
-          ...prev,
-          characters: updatedLocalChars,
-          settingData: newSetting,
-          updatedAt: new Date(),
+          ...sc,
+          name: updates.name ?? sc.name,
+          description: updates.description ?? sc.description,
+          role: (updates.role ?? sc.role) ?? null,
+          traits: updates.appearance ? String(updates.appearance).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : sc.traits || [],
         };
-      });
-    } catch (err) {
-      console.error('Error updating character:', err);
-    }
-  }, []);
+      }
+      return sc;
+    });
+    const newSetting: SettingData = {
+      characters: settingChars,
+      relations: currentProject.settingData?.relations || [],
+      name_mapping: currentProject.settingData?.name_mapping || {},
+      world: currentProject.settingData?.world || [],
+      plot_threads: currentProject.settingData?.plot_threads || [],
+    };
+    await updateProject(currentProject.id, { settingData: newSetting, characters: updatedLocalChars } as Partial<CreativeProject>);
+  }, [currentProject, updateProject]);
 
   const deleteCharacter = useCallback(async (id: string) => {
-    try {
-      // Remove from local characters and from setting_data.characters; persist only to projects.setting_data
-      setCurrentProject((prev) => {
-        if (!prev) return prev;
-        const filteredLocal = prev.characters.filter((c) => c.id !== id);
-        const nameCandidate = id.split('-')[0];
-        const filteredSetting = (prev.settingData?.characters || []).filter((sc) => sc.name !== nameCandidate);
-
-        const newSetting: SettingData = {
-          characters: filteredSetting,
-          relations: prev.settingData?.relations || [],
-          name_mapping: prev.settingData?.name_mapping || {},
-          world: prev.settingData?.world || [],
-          plot_threads: prev.settingData?.plot_threads || [],
-        };
-
-        updateProject(prev.id, { settingData: newSetting });
-
-        return {
-          ...prev,
-          characters: filteredLocal,
-          settingData: newSetting,
-          updatedAt: new Date(),
-        };
-      });
-    } catch (err) {
-      console.error('Error deleting character:', err);
-    }
-  }, []);
+    if (!currentProject) return;
+    const filteredLocal = currentProject.characters.filter((c) => c.id !== id);
+    const nameCandidate = id.split('-')[0];
+    const filteredSetting = (currentProject.settingData?.characters || []).filter((sc) => sc.name !== nameCandidate);
+    const newSetting: SettingData = {
+      characters: filteredSetting,
+      relations: currentProject.settingData?.relations || [],
+      name_mapping: currentProject.settingData?.name_mapping || {},
+      world: currentProject.settingData?.world || [],
+      plot_threads: currentProject.settingData?.plot_threads || [],
+    };
+    await updateProject(currentProject.id, { settingData: newSetting, characters: filteredLocal } as Partial<CreativeProject>);
+  }, [currentProject, updateProject]);
 
   // ==================== 씬/장면 관리 ====================
   const addSceneEvent = useCallback(async (event: SceneEvent) => {

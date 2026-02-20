@@ -29,12 +29,16 @@ export default function CharactersPage() {
 
   // 캐릭터 추출
   const [extracting, setExtracting] = useState(false);
+  const [extractEpisodeId, setExtractEpisodeId] = useState<string | null>(null);
 
   const handleExtract = async () => {
     if (!currentProject) return;
-    const rawText = currentProject.worldSetting || '';
+    const episodes = currentProject.episodes || [];
+    const rawText = extractEpisodeId
+      ? (episodes.find(e => e.id === extractEpisodeId)?.content || '')
+      : (currentProject.worldSetting || '');
     if (!rawText.trim()) {
-      alert('텍스트 에디터에 내용을 먼저 입력해주세요.');
+      alert('선택한 내용이 비어있습니다. 텍스트 에디터에서 먼저 내용을 작성해주세요.');
       return;
     }
     setExtracting(true);
@@ -143,17 +147,26 @@ export default function CharactersPage() {
     });
   };
 
-  const displayChars = currentProject.settingData?.characters
-    ? currentProject.settingData.characters.map((c: CharacterItem, idx: number) => ({
-        id: `${c.name}-${idx}`,
-        name: c.name,
-        role: c.role || '',
-        description: c.description || '',
-        appearance: (c.traits || []).join(', '),
+  // Merge: full Character objects take priority; CharacterItem stubs fill in extras from settingData
+  const displayChars: Character[] = (() => {
+    const full = currentProject.characters;
+    const setting = currentProject.settingData?.characters || [];
+    const seen = new Set(full.map(c => c.name));
+    const extras: Character[] = setting
+      .filter((sc: CharacterItem) => !seen.has(sc.name))
+      .map((sc: CharacterItem, idx: number) => ({
+        id: `${sc.name}-${idx}`,
+        name: sc.name,
+        role: sc.role || '',
+        description: sc.description || '',
+        appearance: (sc.traits || []).join(', '),
         personality: '',
         backstory: '',
-      }))
-    : currentProject.characters;
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+    return [...full, ...extras];
+  })();
 
   const inputClass = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500';
   const labelClass = 'block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm';
@@ -169,7 +182,22 @@ export default function CharactersPage() {
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm">{currentProject.title}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* 회차 선택 드롭다운 */}
+            {(currentProject.episodes || []).length > 0 && (
+              <select
+                value={extractEpisodeId || ''}
+                onChange={(e) => setExtractEpisodeId(e.target.value || null)}
+                className="text-sm px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none"
+              >
+                <option value="">세계관 전체</option>
+                {currentProject.episodes.map((ep) => (
+                  <option key={ep.id} value={ep.id}>
+                    {ep.chapterNumber ? `${ep.chapterNumber}화` : ''} {ep.title}
+                  </option>
+                ))}
+              </select>
+            )}
             {/* 캐릭터 추출 버튼 */}
             <button
               onClick={handleExtract}
