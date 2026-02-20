@@ -475,6 +475,7 @@ export function CreativeProvider({
             createdAt: new Date(e.created_at),
             updatedAt: new Date(e.updated_at),
           }));
+          // update both currentProject and projects list so UI lists reflect loaded events
           setCurrentProject((prev) => {
             if (!prev || prev.id !== id) return prev;
             return {
@@ -482,6 +483,7 @@ export function CreativeProvider({
               timeline: { ...prev.timeline, events: sceneEvents },
             };
           });
+          setProjects((prev) => prev.map((p) => p.id === id ? { ...p, timeline: { ...p.timeline, events: sceneEvents } } : p));
         }
 
         // episodes 로드
@@ -502,11 +504,14 @@ export function CreativeProvider({
             createdAt: new Date(e.created_at),
             updatedAt: new Date(e.updated_at),
           }));
+          // update both currentProject and projects list so UI lists reflect loaded episodes
           setCurrentProject((prev) => {
             if (!prev || prev.id !== id) return prev;
             return { ...prev, episodes };
           });
+          setProjects((prev) => prev.map((p) => p.id === id ? { ...p, episodes } : p));
         }
+        
       } catch (err) {
         console.warn('DB에서 프로젝트 데이터 로드 실패:', err);
       }

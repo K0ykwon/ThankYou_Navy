@@ -22,26 +22,27 @@ export default function TodoPage() {
     if (newTodoText.trim()) {
       const newTodo = {
         id: Date.now().toString(),
-        text: newTodoText,
+        title: newTodoText,
         completed: false,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       const updatedTodos = [...todos, newTodo];
-      updateProjectField('todo', updatedTodos);
+      updateProjectField('todos', updatedTodos);
       setNewTodoText('');
     }
   };
 
   const handleToggleTodo = (id: string) => {
     const updatedTodos = todos.map((todo: any) =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      todo.id === id ? { ...todo, completed: !todo.completed, updatedAt: new Date().toISOString() } : todo
     );
-    updateProjectField('todo', updatedTodos);
+    updateProjectField('todos', updatedTodos);
   };
 
   const handleDeleteTodo = (id: string) => {
     const updatedTodos = todos.filter((todo: any) => todo.id !== id);
-    updateProjectField('todo', updatedTodos);
+    updateProjectField('todos', updatedTodos);
   };
 
   const completedCount = todos.filter((todo: any) => todo.completed).length;
@@ -95,7 +96,7 @@ export default function TodoPage() {
                       : 'text-gray-900 dark:text-white'
                   }`}
                 >
-                  {todo.text}
+                  {todo.title || todo.text}
                 </span>
                 <button
                   onClick={() => handleDeleteTodo(todo.id)}
