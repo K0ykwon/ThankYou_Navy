@@ -16,6 +16,7 @@ export default function ClientShell({
   const { currentProject, userSettings } = useCreative();
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   // 프로젝트 페이지인지 확인 (/, /main, /editor 등)
   const isProjectPage = ['/', '/main', '/editor', '/characters', '/storyboard', '/settings'].includes(pathname);
@@ -51,28 +52,46 @@ export default function ClientShell({
       // 3. 테마 적용 (다크 모드)
       if (userSettings.themeMode === 'dark') {
         root.classList.add('dark');
-        body.style.backgroundColor = '#0a0a0a';
-        body.style.color = '#ededed';
+        body.style.backgroundColor = '#150A03';
+        body.style.color = '#F0DFC5';
       } else {
         root.classList.remove('dark');
-        body.style.backgroundColor = '#ffffff';
-        body.style.color = '#171717';
+        body.style.backgroundColor = '#FEFCF5';
+        body.style.color = '#2C1505';
       }
     }
   }, [userSettings]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Global Header */}
-      <header style={{ background: 'linear-gradient(to right, #3D1F0A, #5A3018)' }} className="text-white py-3 px-6 shadow-lg">
+      {/* Global Header - sticky */}
+      <header
+        style={{ background: 'linear-gradient(to right, #3D1F0A, #5A3018)' }}
+        className="sticky top-0 z-50 text-white py-3 px-6 shadow-lg"
+      >
         <div className="max-w-full mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <span className="text-3xl">🪵</span>
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: '#F0DFC5' }}>창작 스튜디오</h1>
-              <p className="text-xs" style={{ color: '#C4935A' }}>창작 보조 도구</p>
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* 모바일 전용 햄버거 버튼 */}
+            {currentProject && (
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                style={{ color: '#F0DFC5' }}
+                className="md:hidden p-2 rounded hover:opacity-70 transition-opacity mr-1"
+                aria-label="메뉴 열기"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            )}
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <span className="text-3xl">🪵</span>
+              <div>
+                <h1 className="text-2xl font-bold" style={{ color: '#F0DFC5' }}>창작 스튜디오</h1>
+                <p className="text-xs" style={{ color: '#C4935A' }}>창작 보조 도구</p>
+              </div>
+            </Link>
+          </div>
           <button
             onClick={() => setShowSettings(true)}
             style={{ backgroundColor: 'rgba(196,147,90,0.2)', color: '#F0DFC5', borderColor: '#C4935A' }}
@@ -84,8 +103,13 @@ export default function ClientShell({
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-1 gap-0"> 
-        {currentProject && <Sidebar />}
+      <div className="flex flex-1 gap-0">
+        {currentProject && (
+          <Sidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+        )}
         <main className="flex-1">
           {children}
         </main>
