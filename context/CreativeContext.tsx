@@ -88,6 +88,10 @@ export function CreativeProvider({
   const [currentProject, setCurrentProject] = useState<CreativeProject | null>(
     null
   );
+  const hasRestoredProject = React.useRef(false);
+  // 순차 호출 간 최신 상태를 동기적으로 추적 (React state는 비동기이므로 ref로 보완)
+  const latestProjectRef = React.useRef<CreativeProject | null>(null);
+  latestProjectRef.current = currentProject;
   const [userSettings, setUserSettingsState] = useState<UserSettings | null>(
     () => {
       const defaultSettings: UserSettings = {
@@ -153,20 +157,18 @@ export function CreativeProvider({
               genre: p.genre || undefined,
               author: p.author || undefined,
               fileTree: p.file_tree || [],
-              // prefer explicit characters table, otherwise derive from setting_data.characters
-              characters: p.characters && Array.isArray(p.characters) && p.characters.length > 0
-                ? p.characters
-                : (p.setting_data?.characters || p.settingData?.characters || []).map((c: any, idx: number) => ({
-                    id: (c.name || ('char-' + idx)) + '-' + idx,
-                    name: c.name || '',
-                    role: c.role || '',
-                    description: c.description || null,
-                    appearance: Array.isArray(c.traits) ? c.traits.join(', ') : (c.traits || '').toString(),
-                    personality: '',
-                    backstory: '',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  })),
+              // setting_data.characters에 full Character 필드 포함 저장하므로 그대로 복원
+              characters: (p.setting_data?.characters || p.settingData?.characters || []).map((c: any, idx: number) => ({
+                id: c.id || (c.name || ('char-' + idx)) + '-' + idx,
+                name: c.name || '',
+                role: c.role || '',
+                description: c.description || null,
+                appearance: c.appearance || (Array.isArray(c.traits) ? c.traits.join(', ') : (c.traits || '').toString()),
+                personality: c.personality || '',
+                backstory: c.backstory || '',
+                createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
+                updatedAt: c.updatedAt ? new Date(c.updatedAt) : new Date(),
+              })),
               settingData: p.setting_data || p.settingData || null,
               episodes: p.episodes || [],
               timeline: p.timeline || { id: p.id, projectId: p.id, events: [], totalDuration: 0 },
@@ -213,6 +215,7 @@ export function CreativeProvider({
     // 페이지 로드 시 한 번만 실행
     loadProjects();
   }, []);
+
 
   // ==================== 프로젝트 기본 관리 ====================
   const createProject = useCallback(
@@ -277,6 +280,9 @@ export function CreativeProvider({
           return updated;
         });
         setCurrentProject(newProject);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('selectedProjectId', newProject.id);
+        }
       } catch (err) {
         console.warn('프로젝트 생성 오류 (로컬에만 저장됨):', err);
         // 에러 발생해도 로컬에는 저장
@@ -411,6 +417,9 @@ export function CreativeProvider({
         return updated;
       });
       setCurrentProject((prev) => (prev?.id === id ? null : prev));
+      if (typeof window !== 'undefined' && localStorage.getItem('selectedProjectId') === id) {
+        localStorage.removeItem('selectedProjectId');
+      }
     } catch (err) {
       console.warn('프로젝트 삭제 오류:', err);
       // 에러 발생해도 로컬에서는 삭제
@@ -428,6 +437,9 @@ export function CreativeProvider({
   const selectProject = useCallback(async (id: string) => {
     const project = projects.find((p) => p.id === id);
     if (!project) return;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedProjectId', id);
+    }
     setCurrentProject(project);
 
     // DB에서 scene_events와 episodes를 실제로 로드
@@ -488,74 +500,144 @@ export function CreativeProvider({
     }
   }, [projects]);
 
+  // 프로젝트 목록 로드 후 마지막 선택 프로젝트 자동 복원
+  useEffect(() => {
+    if (projects.length > 0 && !currentProject && !hasRestoredProject.current) {
+      hasRestoredProject.current = true;
+      if (typeof window !== 'undefined') {
+        const savedId = localStorage.getItem('selectedProjectId');
+        if (savedId && projects.find((p) => p.id === savedId)) {
+          selectProject(savedId);
+        }
+      }
+    }
+  }, [projects, selectProject, currentProject]);
+
   // ==================== 캐릭터 관리 ====================
-  const addCharacter = useCallback(
-    async (character: Character) => {
-      if (!currentProject) return;
-      const charItem: CharacterItem = {
-        name: character.name,
-        aliases: [],
-        description: character.description || null,
-        traits: character.appearance ? character.appearance.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [],
-        relationships: {},
-        role: character.role || null,
-      };
-      const newSetting: SettingData = {
-        characters: [...(currentProject.settingData?.characters || []), charItem],
-        relations: currentProject.settingData?.relations || [],
-        name_mapping: { ...(currentProject.settingData?.name_mapping || {}), [character.name]: [] },
-        world: currentProject.settingData?.world || [],
-        plot_threads: currentProject.settingData?.plot_threads || [],
-      };
-      const updatedChars = [...currentProject.characters, character];
-      // updateProject handles both local state and DB write
-      await updateProject(currentProject.id, { settingData: newSetting, characters: updatedChars } as Partial<CreativeProject>);
-    },
-    [currentProject, updateProject]
-  );
+  // latestProjectRef를 사용해 연속 호출 시 race condition 방지
+  // (React state는 비동기이므로 ref로 최신 상태를 동기적으로 추적)
+
+  const applyCharacterUpdate = (updated: CreativeProject) => {
+    latestProjectRef.current = updated; // 동기 업데이트 → 다음 호출이 즉시 최신 상태를 읽음
+    setCurrentProject(updated);
+    setProjects((prev) => {
+      const newList = prev.map((p) => (p.id === updated.id ? updated : p));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('creativeStudioProjects', JSON.stringify(newList));
+      }
+      return newList;
+    });
+  };
+
+  const writeSettingDataToDB = async (projectId: string, settingData: SettingData) => {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('projects')
+      .update({ setting_data: settingData, updated_at: new Date().toISOString() })
+      .eq('id', projectId);
+    if (error) console.warn('캐릭터 DB 저장 실패:', error.message);
+  };
+
+  const addCharacter = useCallback(async (character: Character) => {
+    const proj = latestProjectRef.current;
+    if (!proj) return;
+
+    const charItem = {
+      id: character.id,
+      name: character.name,
+      aliases: [],
+      description: character.description || null,
+      traits: character.appearance ? character.appearance.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [],
+      relationships: {},
+      role: character.role || null,
+      appearance: character.appearance || '',
+      personality: character.personality || '',
+      backstory: character.backstory || '',
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt,
+    };
+    const newSetting: SettingData = {
+      characters: [...(proj.settingData?.characters || []), charItem],
+      relations: proj.settingData?.relations || [],
+      name_mapping: { ...(proj.settingData?.name_mapping || {}), [character.name]: [] },
+      world: proj.settingData?.world || [],
+      plot_threads: proj.settingData?.plot_threads || [],
+    };
+    const updated: CreativeProject = {
+      ...proj,
+      characters: [...proj.characters, character],
+      settingData: newSetting,
+      updatedAt: new Date(),
+    };
+    applyCharacterUpdate(updated);
+    await writeSettingDataToDB(proj.id, newSetting);
+  }, []); // 빈 deps — latestProjectRef로 최신 상태 접근
 
   const updateCharacter = useCallback(async (id: string, updates: Partial<Character>) => {
-    if (!currentProject) return;
-    const updatedLocalChars = currentProject.characters.map((c) =>
+    const proj = latestProjectRef.current;
+    if (!proj) return;
+
+    const updatedLocalChars = proj.characters.map((c) =>
       c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
     );
-    const nameCandidate = id.split('-')[0];
-    const settingChars = (currentProject.settingData?.characters || []).map((sc) => {
-      if (sc.name === nameCandidate || sc.name === (updates.name || sc.name)) {
-        return {
-          ...sc,
-          name: updates.name ?? sc.name,
-          description: updates.description ?? sc.description,
-          role: (updates.role ?? sc.role) ?? null,
-          traits: updates.appearance ? String(updates.appearance).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : sc.traits || [],
-        };
-      }
-      return sc;
+    const updatedChar = updatedLocalChars.find((c) => c.id === id);
+    const settingChars = (proj.settingData?.characters || []).map((sc: any) => {
+      const isMatch = sc.id === id || (updatedChar && sc.name === updatedChar.name);
+      if (!isMatch) return sc;
+      return {
+        ...sc,
+        name: updates.name ?? sc.name,
+        description: updates.description ?? sc.description,
+        role: (updates.role ?? sc.role) ?? null,
+        traits: updates.appearance ? String(updates.appearance).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : sc.traits || [],
+        appearance: updates.appearance ?? sc.appearance ?? '',
+        personality: updates.personality ?? sc.personality ?? '',
+        backstory: updates.backstory ?? sc.backstory ?? '',
+        updatedAt: new Date(),
+      };
     });
     const newSetting: SettingData = {
       characters: settingChars,
-      relations: currentProject.settingData?.relations || [],
-      name_mapping: currentProject.settingData?.name_mapping || {},
-      world: currentProject.settingData?.world || [],
-      plot_threads: currentProject.settingData?.plot_threads || [],
+      relations: proj.settingData?.relations || [],
+      name_mapping: proj.settingData?.name_mapping || {},
+      world: proj.settingData?.world || [],
+      plot_threads: proj.settingData?.plot_threads || [],
     };
-    await updateProject(currentProject.id, { settingData: newSetting, characters: updatedLocalChars } as Partial<CreativeProject>);
-  }, [currentProject, updateProject]);
+    const updated: CreativeProject = {
+      ...proj,
+      characters: updatedLocalChars,
+      settingData: newSetting,
+      updatedAt: new Date(),
+    };
+    applyCharacterUpdate(updated);
+    await writeSettingDataToDB(proj.id, newSetting);
+  }, []);
 
   const deleteCharacter = useCallback(async (id: string) => {
-    if (!currentProject) return;
-    const filteredLocal = currentProject.characters.filter((c) => c.id !== id);
-    const nameCandidate = id.split('-')[0];
-    const filteredSetting = (currentProject.settingData?.characters || []).filter((sc) => sc.name !== nameCandidate);
+    const proj = latestProjectRef.current;
+    if (!proj) return;
+
+    const deletedChar = proj.characters.find((c) => c.id === id);
+    const filteredLocal = proj.characters.filter((c) => c.id !== id);
+    const filteredSetting = (proj.settingData?.characters || []).filter((sc: any) =>
+      sc.id !== id && (!deletedChar || sc.name !== deletedChar.name)
+    );
     const newSetting: SettingData = {
       characters: filteredSetting,
-      relations: currentProject.settingData?.relations || [],
-      name_mapping: currentProject.settingData?.name_mapping || {},
-      world: currentProject.settingData?.world || [],
-      plot_threads: currentProject.settingData?.plot_threads || [],
+      relations: proj.settingData?.relations || [],
+      name_mapping: proj.settingData?.name_mapping || {},
+      world: proj.settingData?.world || [],
+      plot_threads: proj.settingData?.plot_threads || [],
     };
-    await updateProject(currentProject.id, { settingData: newSetting, characters: filteredLocal } as Partial<CreativeProject>);
-  }, [currentProject, updateProject]);
+    const updated: CreativeProject = {
+      ...proj,
+      characters: filteredLocal,
+      settingData: newSetting,
+      updatedAt: new Date(),
+    };
+    applyCharacterUpdate(updated);
+    await writeSettingDataToDB(proj.id, newSetting);
+  }, []);
 
   // ==================== 씬/장면 관리 ====================
   const addSceneEvent = useCallback(async (event: SceneEvent) => {
