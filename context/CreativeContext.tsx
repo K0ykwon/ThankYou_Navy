@@ -146,19 +146,23 @@ export function CreativeProvider({
 
           if (error) {
             console.warn('⚠️ Supabase에서 프로젝트 로드 실패:', error.message);
-            // localStorage에서 캐시된 프로젝트 로드
             loadProjectsFromCache();
           } else if (data && data.length > 0) {
-            // Supabase에서 불러온 프로젝트를 로컬 상태로 변환
-            const loadedProjects: CreativeProject[] = data.map((p: any) => ({
-              id: p.id,
-              title: p.title,
-              description: p.description,
-              genre: p.genre || undefined,
-              author: p.author || undefined,
-              fileTree: p.file_tree || [],
-              // setting_data.characters에 full Character 필드 포함 저장하므로 그대로 복원
-              characters: (p.setting_data?.characters || p.settingData?.characters || []).map((c: any, idx: number) => ({
+            // localStorage 캐시 로드 (DB에 컬럼이 없는 필드의 fallback용)
+            const cachedRaw = typeof window !== 'undefined'
+              ? localStorage.getItem('creativeStudioProjects') : null;
+            const cachedList: any[] = cachedRaw ? (() => { try { return JSON.parse(cachedRaw); } catch { return []; } })() : [];
+            const getCached = (id: string) => cachedList.find((c: any) => c.id === id) || null;
+
+            const loadedProjects: CreativeProject[] = data.map((p: any) => {
+              // DB 컬럼이 없으면 localStorage 캐시에서 보충 (world_setting, setting_data 등)
+              const cached = getCached(p.id);
+              const settingData = p.setting_data ?? cached?.settingData ?? null;
+              const worldSetting = p.world_setting ?? cached?.worldSetting ?? undefined;
+              const consistencyReport = p.consistency_report ?? cached?.consistencyReport ?? null;
+
+              const charSource = settingData?.characters || [];
+              const characters = charSource.map((c: any, idx: number) => ({
                 id: c.id || (c.name || ('char-' + idx)) + '-' + idx,
                 name: c.name || '',
                 role: c.role || '',
@@ -168,20 +172,29 @@ export function CreativeProvider({
                 backstory: c.backstory || '',
                 createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
                 updatedAt: c.updatedAt ? new Date(c.updatedAt) : new Date(),
-              })),
-              settingData: p.setting_data || p.settingData || null,
-              episodes: p.episodes || [],
-              timeline: p.timeline || { id: p.id, projectId: p.id, events: [], totalDuration: 0 },
-              todos: p.todos || [],
-              mindMap: p.mindmap || [],
-              worldSetting: p.world_setting || undefined,
-              consistencyReport: p.consistency_report || null,
-              createdAt: new Date(p.created_at),
-              updatedAt: new Date(p.updated_at),
-            }));
+              }));
+
+              return {
+                id: p.id,
+                title: p.title,
+                description: p.description,
+                genre: p.genre || undefined,
+                author: p.author || undefined,
+                fileTree: p.file_tree || [],
+                characters,
+                settingData,
+                episodes: p.episodes || [],
+                timeline: p.timeline || { id: p.id, projectId: p.id, events: [], totalDuration: 0 },
+                todos: p.todos || [],
+                mindMap: p.mindmap || [],
+                worldSetting,
+                consistencyReport,
+                createdAt: new Date(p.created_at),
+                updatedAt: new Date(p.updated_at),
+              };
+            });
 
             setProjects(loadedProjects);
-            // 로컬 캐시에도 저장
             if (typeof window !== 'undefined') {
               localStorage.setItem('creativeStudioProjects', JSON.stringify(loadedProjects));
             }
