@@ -19,13 +19,13 @@ const ChevronRightIcon = () => (
 );
 
 const FolderIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" style={{ color: '#C4935A' }} viewBox="0 0 20 20" fill="currentColor">
     <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
   </svg>
 );
 
 const FileIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" style={{ color: '#DBBF8E' }} viewBox="0 0 20 20" fill="currentColor">
     <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
   </svg>
 );
@@ -79,13 +79,16 @@ function TreeNode({
   return (
     <div>
       <div
-        className="group flex items-center py-1.5 hover:bg-gray-700/60 cursor-pointer rounded transition-colors text-gray-200"
-        style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '8px' }}
+        className="group flex items-center py-1.5 cursor-pointer rounded transition-colors"
+        style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '8px', color: '#D4B896' }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(196,147,90,0.15)')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         {/* Expand/collapse chevron for folders */}
         <button
           onClick={() => type === 'folder' && setIsExpanded(!isExpanded)}
-          className={`mr-1 text-gray-500 hover:text-gray-300 w-4 flex-shrink-0 flex items-center justify-center ${type !== 'folder' || !children?.length ? 'invisible' : ''}`}
+          className={`mr-1 w-4 flex-shrink-0 flex items-center justify-center ${type !== 'folder' || !children?.length ? 'invisible' : ''}`}
+          style={{ color: '#9A6B42' }}
         >
           {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
         </button>
@@ -106,12 +109,14 @@ function TreeNode({
               if (e.key === 'Enter') handleRename();
               if (e.key === 'Escape') setIsRenaming(false);
             }}
-            className="bg-gray-600 text-white px-2 py-0.5 rounded flex-1 text-sm outline-none"
+            style={{ backgroundColor: '#4A2C17', color: '#F0DFC5', borderColor: '#5C3A1A' }}
+            className="px-2 py-0.5 rounded flex-1 text-sm outline-none border"
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span
-            className="flex-1 text-gray-100 text-sm truncate"
+            className="flex-1 text-sm truncate"
+            style={{ color: '#E0C8A8' }}
             onDoubleClick={() => setIsRenaming(true)}
           >
             {name}
@@ -122,7 +127,10 @@ function TreeNode({
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
           <button
             onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}
-            className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+            className="p-1 rounded transition-colors"
+            style={{ color: '#9A6B42' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(196,147,90,0.3)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             title="이름 바꾸기"
           >
             <PencilIcon />
@@ -130,7 +138,10 @@ function TreeNode({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(id); }}
-              className="p-1 hover:bg-red-600 rounded text-gray-400 hover:text-white transition-colors"
+              className="p-1 rounded transition-colors"
+              style={{ color: '#9A6B42' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(180,50,30,0.4)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               title="삭제"
             >
               <TrashIcon />
@@ -193,29 +204,32 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`fixed left-0 top-18 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r border-gray-700
+        style={{ background: 'linear-gradient(to bottom, #1E0F05, #2F1A0A)', borderColor: '#4A2C17' }}
+        className={`fixed left-0 top-18 h-[calc(100vh-4rem)] w-64 shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r
           ${isHovered ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Project Info */}
-        <div className="p-4 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
-          <h2 className="font-bold text-base text-white mb-0.5 truncate">{currentProject.title}</h2>
-          <p className="text-xs text-gray-400 line-clamp-2">{currentProject.description}</p>
+        <div className="p-4 sticky top-0 z-10" style={{ backgroundColor: '#1E0F05', borderBottom: '1px solid #4A2C17' }}>
+          <h2 className="font-bold text-base mb-0.5 truncate" style={{ color: '#F0DFC5' }}>{currentProject.title}</h2>
+          <p className="text-xs line-clamp-2" style={{ color: '#9A6B42' }}>{currentProject.description}</p>
         </div>
 
         {/* Navigation */}
-        <div className="px-3 py-4 border-b border-gray-700">
-          <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider px-1">메뉴</h3>
+        <div className="px-3 py-4" style={{ borderBottom: '1px solid #4A2C17' }}>
+          <h3 className="text-xs font-semibold mb-2 uppercase tracking-wider px-1" style={{ color: '#7A4E28' }}>메뉴</h3>
           <div className="space-y-0.5">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                  pathname === item.href
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                }`}
+                style={pathname === item.href
+                  ? { backgroundColor: '#8B5A2B', color: '#F0DFC5' }
+                  : { color: '#D4B896' }
+                }
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:opacity-80"
+                onMouseEnter={e => { if (pathname !== item.href) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(196,147,90,0.15)'; }}
+                onMouseLeave={e => { if (pathname !== item.href) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
               >
                 <span className="text-base leading-none">{item.icon}</span>
                 <span className="text-sm font-medium">{item.label}</span>
@@ -225,18 +239,20 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         </div>
 
         {/* Special Tools */}
-        <div className="px-3 py-4 border-b border-gray-700">
-          <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider px-1">특수 도구</h3>
+        <div className="px-3 py-4" style={{ borderBottom: '1px solid #4A2C17' }}>
+          <h3 className="text-xs font-semibold mb-2 uppercase tracking-wider px-1" style={{ color: '#7A4E28' }}>특수 도구</h3>
           <div className="space-y-0.5">
             {specialTools.map((tool) => (
               <Link
                 key={tool.href}
                 href={tool.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  pathname === tool.href
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:bg-gray-700 hover:text-gray-100'
-                }`}
+                style={pathname === tool.href
+                  ? { backgroundColor: '#8B5A2B', color: '#F0DFC5' }
+                  : { color: '#C4935A' }
+                }
+                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                onMouseEnter={e => { if (pathname !== tool.href) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(196,147,90,0.15)'; }}
+                onMouseLeave={e => { if (pathname !== tool.href) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
               >
                 <span className="text-sm leading-none">{tool.icon}</span>
                 <span className="text-sm">{tool.label}</span>
@@ -246,7 +262,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700 text-xs text-gray-500 mt-auto">
+        <div className="p-4 text-xs mt-auto" style={{ borderTop: '1px solid #4A2C17', color: '#7A4E28' }}>
           Creative Studio 2026
         </div>
       </aside>

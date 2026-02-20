@@ -32,12 +32,12 @@ export default function StartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #F5EAD3, #FBF4E8)' }}>
       {/* Header */}
-<header className="w-full bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-800">
+<header className="w-full shadow-sm" style={{ backgroundColor: '#FBF4E8', borderBottom: '1px solid #DBBF8E' }}>
   <div className="max-w-7xl mx-auto px-6 py-8">
-    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Creative Studio</h1>
-    <p className="text-gray-600 dark:text-gray-400">Start your creative journey</p>
+    <h1 className="text-4xl font-bold mb-2" style={{ color: '#2C1505' }}>Creative Studio</h1>
+    <p style={{ color: '#9A6B42' }}>Start your creative journey</p>
   </div>
 </header>
 
@@ -48,17 +48,18 @@ export default function StartPage() {
           {!showNewProjectForm ? (
             <button
               onClick={() => setShowNewProjectForm(true)}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white font-bold rounded-lg shadow-lg transition-all transform hover:scale-105"
+              style={{ background: 'linear-gradient(to right, #8B5A2B, #A67C52)', color: '#FBF4E8' }}
+              className="px-8 py-4 font-bold rounded-lg shadow-lg transition-all transform hover:scale-105 hover:opacity-90"
             >
               + New Project
             </button>
           ) : (
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border-2 border-blue-200 dark:border-blue-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Project</h2>
+            <div className="p-8 rounded-lg shadow-lg border-2" style={{ backgroundColor: '#F5EAD3', borderColor: '#C4935A' }}>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: '#2C1505' }}>Create New Project</h2>
               <form onSubmit={handleCreateProject}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold mb-2" style={{ color: '#614023' }}>
                       Project Title <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -67,13 +68,14 @@ export default function StartPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, title: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:ring-blue-900 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      style={{ borderColor: '#C4935A', backgroundColor: '#FBF4E8', color: '#2C1505' }}
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none"
                       placeholder="e.g. My Fantasy Novel"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold mb-2" style={{ color: '#614023' }}>
                       Genre
                     </label>
                     <input
@@ -82,12 +84,13 @@ export default function StartPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, genre: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:ring-blue-900 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      style={{ borderColor: '#C4935A', backgroundColor: '#FBF4E8', color: '#2C1505' }}
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none"
                       placeholder="e.g. Fantasy, Romance, Sci-Fi"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold mb-2" style={{ color: '#614023' }}>
                       Author Name
                     </label>
                     <input
@@ -96,13 +99,14 @@ export default function StartPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, author: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:ring-blue-900 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      style={{ borderColor: '#C4935A', backgroundColor: '#FBF4E8', color: '#2C1505' }}
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none"
                       placeholder="e.g. John Doe"
                     />
                   </div>
                 </div>
                 <div className="mb-6">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-bold mb-2" style={{ color: '#614023' }}>
                     Description
                   </label>
                   <textarea
@@ -110,7 +114,8 @@ export default function StartPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:ring-blue-900 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    style={{ borderColor: '#C4935A', backgroundColor: '#FBF4E8', color: '#2C1505' }}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none"
                     placeholder="Write a brief description of your project"
                     rows={4}
                   />
@@ -118,7 +123,8 @@ export default function StartPage() {
                 <div className="flex gap-4">
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
+                    style={{ backgroundColor: '#8B5A2B', color: '#FBF4E8' }}
+                    className="flex-1 px-6 py-3 font-bold rounded-lg transition-colors hover:opacity-80"
                   >
                     Create
                   </button>
@@ -128,7 +134,8 @@ export default function StartPage() {
                       setShowNewProjectForm(false);
                       setFormData({ title: '', description: '', genre: '', author: '' });
                     }}
-                    className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
+                    style={{ backgroundColor: '#9A6B42', color: '#FBF4E8' }}
+                    className="flex-1 px-6 py-3 font-bold rounded-lg transition-colors hover:opacity-80"
                   >
                     Cancel
                   </button>
@@ -148,17 +155,18 @@ export default function StartPage() {
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all transform hover:-translate-y-1"
+                  className="rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all transform hover:-translate-y-1"
+                  style={{ backgroundColor: '#F5EAD3', border: '1px solid #DBBF8E' }}
                 >
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 truncate">
+                    <h3 className="text-xl font-bold mb-2 truncate" style={{ color: '#2C1505' }}>
                       {project.title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                    <p className="text-sm mb-3 line-clamp-2" style={{ color: '#7A5030' }}>
                       {project.description || 'No description'}
                     </p>
 
-                    <div className="flex gap-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex gap-3 mb-4 text-sm" style={{ color: '#9A6B42' }}>
                       {project.genre && (
                         <div className="flex items-center gap-1">
                           <span>Book</span>
@@ -173,19 +181,20 @@ export default function StartPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    <div className="flex gap-2 text-xs mb-4" style={{ color: '#9A6B42' }}>
                       <div>Characters: {project.characters.length}</div>
                       <div>Episodes: {project.episodes.length}</div>
                     </div>
 
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+                    <p className="text-xs mb-4" style={{ color: '#C4935A' }}>
                       Updated: {new Date(project.updatedAt).toLocaleDateString('en-US')}
                     </p>
 
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleSelectProject(project.id)}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-bold rounded transition-colors"
+                        style={{ backgroundColor: '#8B5A2B', color: '#FBF4E8' }}
+                        className="flex-1 px-4 py-2 text-sm font-bold rounded transition-colors hover:opacity-80"
                       >
                         Open
                       </button>
@@ -195,7 +204,7 @@ export default function StartPage() {
                             deleteProject(project.id);
                           }
                         }}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm font-bold rounded transition-colors"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded transition-colors"
                       >
                         Delete
                       </button>

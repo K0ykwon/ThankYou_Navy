@@ -64,18 +64,19 @@ export default function ClientShell({
   return (
     <div className="flex min-h-screen flex-col">
       {/* Global Header */}
-      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 px-6 shadow-lg">
+      <header style={{ background: 'linear-gradient(to right, #3D1F0A, #5A3018)' }} className="text-white py-3 px-6 shadow-lg">
         <div className="max-w-full mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <span className="text-3xl">🎨</span>
+            <span className="text-3xl">🪵</span>
             <div>
-              <h1 className="text-2xl font-bold">창작 스튜디오</h1>
-              <p className="text-xs text-blue-200">창작 보조 도구</p>
+              <h1 className="text-2xl font-bold" style={{ color: '#F0DFC5' }}>창작 스튜디오</h1>
+              <p className="text-xs" style={{ color: '#C4935A' }}>창작 보조 도구</p>
             </div>
           </Link>
           <button
             onClick={() => setShowSettings(true)}
-            className="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded transition-colors text-sm font-medium"
+            style={{ backgroundColor: 'rgba(196,147,90,0.2)', color: '#F0DFC5', borderColor: '#C4935A' }}
+            className="px-4 py-2 border rounded hover:opacity-80 transition-opacity text-sm font-medium"
           >
             설정
           </button>
