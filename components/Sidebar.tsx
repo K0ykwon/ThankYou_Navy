@@ -212,7 +212,7 @@ export default function Sidebar({ children, mobileOpen = false, onMobileClose }:
 
       {/* 데스크톱 전용 마우스 트리거 영역 */}
       <div
-        className="fixed left-0 top-16 w-2 h-[calc(100vh-4rem)] z-[60] hidden md:block"
+        className="fixed left-0 top-0 pt-16 w-2 h-screen z-[60] hidden md:block"
         onMouseEnter={() => setIsHovered(true)}
       />
 
@@ -221,7 +221,7 @@ export default function Sidebar({ children, mobileOpen = false, onMobileClose }:
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{ background: 'linear-gradient(to bottom, #1E0F05, #2F1A0A)', borderColor: '#4A2C17' }}
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 shadow-2xl overflow-y-auto flex flex-col z-50 transition-transform duration-300 ease-in-out border-r
+        className={`fixed left-0 top-0 pt-16 h-screen w-64 shadow-2xl overflow-y-auto flex flex-col z-40 transition-transform duration-300 ease-in-out border-r
           ${isVisible ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
